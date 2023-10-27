@@ -1,6 +1,7 @@
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Enumeration;
 
 public class oNode {
 
@@ -45,6 +46,33 @@ public class oNode {
 
         parseConfigFile(name);
 
+        
+        InetAddress IP = null;
+
+        try {
+            Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+            while (interfaces.hasMoreElements()) {
+                NetworkInterface networkInterface = interfaces.nextElement();
+                if (networkInterface.isUp() && !networkInterface.isLoopback()) {
+                    Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
+                    while (addresses.hasMoreElements()) {
+                        InetAddress address = addresses.nextElement();
+                        if (address instanceof Inet4Address) { // Filtra apenas os endereços IPv4
+                            // if(networkInterface.getDisplayName().contains("Ethernet adapter Ethernet")){
+                                System.out.println("Interface: " + networkInterface.getDisplayName());
+                                System.out.println("IP Address: " + address.getHostAddress());
+                                IP = address;
+                                System.out.println("Hostname: " + address.getHostName());
+                                System.out.println();
+                            // }
+                        }
+                    }
+                }
+            }
+        } catch (SocketException e) {
+            e.printStackTrace();
+        }
+
         DatagramSocket serverSocket = new DatagramSocket(9876);
         while (true) {
             byte[] receiveData = new byte[1024];
@@ -52,7 +80,7 @@ public class oNode {
 
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             serverSocket.receive(receivePacket);
-
+            
             byte[] data = receivePacket.getData();
             
 
@@ -63,17 +91,24 @@ public class oNode {
                 if (readObject instanceof Packet) {
                     Packet p = (Packet) readObject;
                     String str = p.getData();
-                    String IPAddress = receivePacket.getAddress().toString().replace("/", "");
+                    InetAddress IPAddress = p.getIP();
                     int port = receivePacket.getPort();
 
-                    System.out.println("RECEIVED: " + str + " from " + IPAddress + ":" + port);
-                    
+                    System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + port);
+                    Packet pk = new Packet(str ,IP);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos);
+                    oos.writeObject(pk);
+                    oos.close();
+                    byte[] datak = baos.toByteArray();
+                    String ipk = receivePacket.getAddress().toString().replace("/", "");
                     for (String ip : ipVizinhos) {
-                        if (!ip.equals(IPAddress)) {
+                        //System.out.println("|" + ip + "|" + receivePacket.getAddress().toString().replace("/", "") + "|");
+                        if (!ip.equals(ipk)) {
                             InetAddress IPAddress2 = InetAddress.getByName(ip);
-                            DatagramPacket sendPacket = new DatagramPacket(data, data.length, IPAddress2, port);
+                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, IPAddress2, 9876);
                             serverSocket.send(sendPacket);
-                            System.out.println("SENT: " + str + " to " + IPAddress2 + ":" + port);
+                            System.out.println("SENT: " + str + " to " + IPAddress2 + ":" + 9876);
                         }
                     }
                 }

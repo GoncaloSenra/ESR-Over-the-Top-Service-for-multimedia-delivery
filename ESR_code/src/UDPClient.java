@@ -18,7 +18,7 @@ class UDPClient {
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         DatagramSocket clientSocket = new DatagramSocket();
         InetAddress IPAddress = InetAddress.getByName(routerIP);
-        InetAddress IP = InetAddress.getByName("localhost");
+        InetAddress IP = null;
         // try {
         //     Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         //     while (interfaces.hasMoreElements()) {
@@ -55,7 +55,7 @@ class UDPClient {
                 clientSocket.close();
                 break;
             }
-            Packet p = new Packet(sentence);
+            Packet p = new Packet(sentence,IP);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(p);
