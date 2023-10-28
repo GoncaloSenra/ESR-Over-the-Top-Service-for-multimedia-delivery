@@ -1,4 +1,3 @@
-import java.io.*;
 import java.net.*;
 
 class UDPServer {
@@ -21,5 +20,6 @@ class UDPServer {
             DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, IPAddress, port);
             serverSocket.send(sendPacket);
         }
+        //serverSocket.close();
     }
 }

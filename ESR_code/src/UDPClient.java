@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.Enumeration;
 
 class UDPClient {
 
@@ -17,7 +16,7 @@ class UDPClient {
 
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
         DatagramSocket clientSocket = new DatagramSocket();
-        InetAddress IPAddress = InetAddress.getByName(routerIP);
+        IpWithMask ip_router = new IpWithMask(routerIP);
 
         
         System.out.println();
@@ -41,7 +40,7 @@ class UDPClient {
             oos.close();
             byte[] data = baos.toByteArray();
             
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, IPAddress, 9876);
+            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_router.getAddress(), 9876);
 
             clientSocket.send(sendPacket);
             System.out.println("ENVIADO: " + sentence);

@@ -1,0 +1,7 @@
+su - core;cd ~/Desktop/ESR_code/src/; java oNode r1
+
+su - core;cd ~/Desktop/ESR_code/; javac ./src/oNode.java ./src/Packet.java
+
+su - core;cd ~/Desktop/ESR_code/; javac ./src/UDPClient.java ./src/Packet.java
+
+su - core;cd ~/Desktop/ESR_code/src/; java UDPClient 10.0.2.1

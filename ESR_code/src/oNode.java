@@ -1,11 +1,10 @@
 import java.io.*;
 import java.net.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.Enumeration;
 
 public class oNode {
 
-    public ConcurrentLinkedQueue<InetAddress> ipVizinhos;
+    public ConcurrentLinkedQueue<IpWithMask> ipVizinhos;
 
     public static String name;
 
@@ -19,7 +18,7 @@ public class oNode {
 
         try {
 
-            ipVizinhos = new ConcurrentLinkedQueue<InetAddress>();
+            ipVizinhos = new ConcurrentLinkedQueue<IpWithMask>();
 
             // System.out.println(System.getProperty("user.dir"));
             // System.out.println("p"+name +".txt");
@@ -28,7 +27,7 @@ public class oNode {
 
             String ip;
             while ((ip = buffer.readLine()) != null) {
-                ipVizinhos.add(InetAddress.getByName(ip));
+                ipVizinhos.offer(new IpWithMask(ip));
             }
 
             f.close();
@@ -66,26 +65,49 @@ public class oNode {
                     Packet p = (Packet) readObject;
                     String str = p.getData();
                     InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
-                    int port = receivePacket.getPort();
                     p.setPath(IPAddress);
 
+                    for (InetAddress address : p.getPrevNetworks()) {
+                        if (!p.getNetworks().contains(address)) {
+                            p.getNetworks().add(address);
+                        }
+                    }
+                    p.setPrevNetworksZero();
+                    
+                    for (IpWithMask ip : ipVizinhos) {
+                            p.setPrevNetworks(ip.getNetwork());
+                    }
 
-                    System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + port);
+                    System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9876);
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
                     ObjectOutputStream oos = new ObjectOutputStream(baos);
                     oos.writeObject(p);
                     oos.close();
                     byte[] datak = baos.toByteArray();
-                    
-                    //System.out.println("|" + ip + "|" + receivePacket.getAddress().toString().replace("/", "") + "|");
-                    for (InetAddress ip : ipVizinhos) {
-                        if (!p.getPath().contains(ip)) {
-                            InetAddress IPAddress2 = ip;
-                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, IPAddress2, 9876);
-                            serverSocket.send(sendPacket);
-                            System.out.println("SENT: " + str + " to " + IPAddress2 + ":" + 9876);
+
+                    System.out.println("====================================");
+                    for (InetAddress ip : p.getNetworks()) {
+                        System.out.println("->" + ip.getHostAddress());
+                    }
+                    System.out.println("====================================");
+
+                    for (IpWithMask ip : ipVizinhos) {
+                        InetAddress packetNetwork = ip.getNetwork();
+                        boolean sent = false; // Variável para verificar se o pacote foi enviado
+                        //System.out.print("IP: " + packetNetwork.getHostAddress() + " -> " );
+                        for (InetAddress ip_network : p.getNetworks()) {
+                            //System.out.println("IP_NETWORK: " + ip_network);
+                            if (ip_network.getHostAddress().equals(packetNetwork.getHostAddress())){
+                                sent = true;
+                                break;
+                            }
                         }
-                        
+                    
+                        if (!sent) {
+                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip.getAddress(), 9876);
+                            serverSocket.send(sendPacket);
+                            System.out.println("SENT: " + str + " to " + ip.getAddress() + ":" + 9876);
+                        }
                     }
                 }
             }catch(Exception e){

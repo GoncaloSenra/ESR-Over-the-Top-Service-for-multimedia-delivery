@@ -1,6 +1,5 @@
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 
@@ -8,29 +7,31 @@ public class Packet implements Serializable{
     private String data;
     private InetAddress IP;
     private ConcurrentLinkedQueue<InetAddress> path;
-    public Packet(String data, InetAddress IP){
-        this.data = data;
-        this.IP = IP;
-        this.path = new ConcurrentLinkedQueue<InetAddress>();
-        this.path.add(IP);
-    }
+    private ConcurrentLinkedQueue<InetAddress> networks;
+    private ConcurrentLinkedQueue<InetAddress> prevNetworks;
 
     public Packet(String data){
         this.data = data;
         this.IP = null;
         this.path = new ConcurrentLinkedQueue<InetAddress>();
+        this.networks = new ConcurrentLinkedQueue<InetAddress>();
+        this.prevNetworks = new ConcurrentLinkedQueue<InetAddress>();
     }
 
     public ConcurrentLinkedQueue<InetAddress> getPath() {
         return this.path;
     }
 
-    public String getData(){
-        return data;
+    public ConcurrentLinkedQueue<InetAddress> getNetworks() {
+        return this.networks;
     }
 
-    public InetAddress getIP(){
-        return IP;
+    public ConcurrentLinkedQueue<InetAddress> getPrevNetworks() {
+        return this.prevNetworks;
+    }
+
+    public String getData(){
+        return data;
     }
 
 
@@ -38,17 +39,29 @@ public class Packet implements Serializable{
         this.path.add(ip);
     }
 
+    public void setNetworks(InetAddress ip){
+        this.networks.add(ip);
+    }
+
+    public void setPrevNetworks(InetAddress ip){
+        this.prevNetworks.add(ip);
+    }
+
+    public void setPrevNetworksZero(){
+        this.prevNetworks.clear();
+    }
+
+    public void setPrevNetworksAll(ConcurrentLinkedQueue<InetAddress> n){
+        this.prevNetworks.addAll(n);
+    }
+
+
     public void setData(String data){
         this.data = data;
     }
 
-    public void setIP(InetAddress IP){
-        this.IP = IP;
-    }
-
-
     public String toString(){
-        return "Data: " + data + " IP: " + IP + " Path: " + path.toString();
+        return "Data: " + data + " IP: " + IP + " Path: " + path.toString() + " Networks: " + networks.toString();
     }
 
 }
