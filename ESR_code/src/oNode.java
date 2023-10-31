@@ -102,7 +102,7 @@ public class oNode {
                             System.out.println("Clave: " + key + ", Valor: " + value);
                         }
     
-                        System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9876);
+                        System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9000);
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
                         ObjectOutputStream oos = new ObjectOutputStream(baos);
                         oos.writeObject(p);
@@ -124,7 +124,7 @@ public class oNode {
                                 boolean sent = false; // Variável para verificar se o pacote foi enviado
                                 //System.out.print("IP: " + packetNetwork.getHostAddress() + " -> " );
                                 for (InetAddress ip_network : p.getNetworks()) {
-                                    //System.out.println("IP_NETWORK: " + ip_network);
+                                    //System.out.println("IP_NETWORK: " + ip_network);s
                                     if (ip_network.getHostAddress().equals(packetNetwork.getHostAddress())){
                                         sent = true;
                                         break;
@@ -132,9 +132,9 @@ public class oNode {
                                 }
                             
                                 if (!sent) {
-                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry.getKey().getAddress(), 9876);
+                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry.getKey().getAddress(), 9000);
                                     serverSocket.send(sendPacket);
-                                    System.out.println("SENT: " + str + " to " + entry.getKey().getAddress() + ":" + 9876);
+                                    System.out.println("SENT: " + str + " to " + entry.getKey().getAddress() + ":" + 9000);
                                 }
                             }
                         }
