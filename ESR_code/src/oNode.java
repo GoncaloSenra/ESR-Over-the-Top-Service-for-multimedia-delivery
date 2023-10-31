@@ -166,29 +166,40 @@ public class oNode {
 
                 for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
                     
-                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getKey().getAddress(), 8500);
-                    pingSocket.send(sendPacket);
-                    System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
-                    
-                    
-                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                    pingSocket.receive(receivePacket);
-                    
-                    
-                    // Caiu no timeout
-                    if (receivePacket.getData() == null) {
+                    try {
+
+                        Thread.sleep(1000);
+                        DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getKey().getAddress(), 8500);
+                        pingSocket.send(sendPacket);
+                        System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                        
+                        
+                        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                        pingSocket.receive(receivePacket);
+                        
+                        
+                        // Caiu no timeout
+                        // if (receivePacket.getData() == null) {
+                        //     System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
+                        //     entry.setValue(false);
+                        //     System.out.println("Tabela ardes -> " + activeRouters.toString());
+                        //     continue;
+                        // }
+                
+                        InetAddress addr = receivePacket.getAddress();                   
+
+                        if (addr.getHostName().equals(entry.getKey().getAddress().getHostName())) {
+                            System.out.println("PONG recebido de: " + entry.getKey().getAddress().getHostName());
+                            entry.setValue(true);
+                            System.out.println("Tabela recebeu PONG:" + activeRouters.toString());
+                        }
+                    } catch (SocketTimeoutException e3) {
                         System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
                         entry.setValue(false);
-                        System.out.println("TAbela ardes -> " + activeRouters.toString());
-                        continue;
-                    }
-            
-                    InetAddress addr = receivePacket.getAddress();                   
-
-                    if (addr.getHostName().equals(entry.getKey().getAddress().getHostName())) {
-                        System.out.println("PONG recebido de: " + entry.getKey().getAddress().getHostName());
-                        entry.setValue(true);
-                        System.out.println("Tabela recebeu PONG:" + activeRouters.toString());
+                        System.out.println("Tabela ardes -> " + activeRouters.toString());
+                        continue;                
+                    } catch (InterruptedException e4) {
+                        e4.printStackTrace();
                     }
                 }
                 
