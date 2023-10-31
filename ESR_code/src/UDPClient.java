@@ -40,7 +40,7 @@ class UDPClient {
             oos.close();
             byte[] data = baos.toByteArray();
             
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_router.getAddress(), 9876);
+            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_router.getAddress(), 9000);
 
             clientSocket.send(sendPacket);
             System.out.println("ENVIADO: " + sentence);
