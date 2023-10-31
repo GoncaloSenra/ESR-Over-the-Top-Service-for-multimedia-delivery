@@ -97,9 +97,7 @@ public class oNode {
                         p.setPrevNetworksZero();
                         
                         for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
-                            IpWithMask key = entry.getKey();
-                            Boolean value = entry.getValue();
-                            System.out.println("Clave: " + key + ", Valor: " + value);
+                            p.setPrevNetworks(entry.getKey().getNetwork());
                         }
     
                         System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9000);
@@ -124,7 +122,7 @@ public class oNode {
                                 boolean sent = false; // Variável para verificar se o pacote foi enviado
                                 //System.out.print("IP: " + packetNetwork.getHostAddress() + " -> " );
                                 for (InetAddress ip_network : p.getNetworks()) {
-                                    //System.out.println("IP_NETWORK: " + ip_network);s
+                                    //System.out.println("IP_NETWORK: " + ip_network);
                                     if (ip_network.getHostAddress().equals(packetNetwork.getHostAddress())){
                                         sent = true;
                                         break;
