@@ -55,8 +55,17 @@ public class oNode {
             o.updateBestPath();
         });
         
+        if (RP) {
+            Thread thread7 = new Thread(() -> {
+                o.helloRP();
+            });
+
+            thread7.start();
+        } else {
+            thread1.start();
+        }
+        
         // Inicia as threads
-        thread1.start();
         thread2.start();
         thread3.start();
         thread4.start();
@@ -103,7 +112,46 @@ public class oNode {
         }
     }
 
+    private void helloRP() {
 
+        try {
+
+            DatagramSocket serverSocket = new DatagramSocket(9000);
+            while (true) {
+                try {
+                    Thread.sleep(7500);
+                } catch (InterruptedException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
+                }
+                byte[] receiveData = new byte[8192];
+                byte[] sendData = new byte[8192];
+                
+                String str = "HELLO";
+                
+                Packet p = new Packet(str);
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                oos.writeObject(p);
+                oos.close();
+                byte[] datak = baos.toByteArray();
+
+                for (InetAddress b : bestPath) {
+                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, b, 9000);
+                    serverSocket.send(sendPacket);
+                    System.out.println("SENT: " + str + " to " + b.getHostName() + ":" + 9000);
+                }
+                    
+             
+
+            }
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();
+        }
+    }
+    
     private void hello() {
 
         try {
@@ -112,7 +160,7 @@ public class oNode {
             while (true) {
                 byte[] receiveData = new byte[8192];
                 byte[] sendData = new byte[8192];
-    
+                
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 serverSocket.receive(receivePacket);
                 
@@ -127,19 +175,8 @@ public class oNode {
                     if (readObject instanceof Packet) {
                         Packet p = (Packet) readObject;
                         String str = p.getData();
-                        InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
-                        p.setPath(IPAddress);
-    
-                        for (InetAddress address : p.getPrevNetworks()) {     
-                            if (!p.getNetworks().contains(address)) {
-                                p.getNetworks().add(address);
-                            }
-                        }
-                        p.setPrevNetworksZero();
+                        //InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
                         
-                        for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
-                            p.setPrevNetworks(entry.getKey().getNetwork());
-                        }
     
                         System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9000);
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -148,35 +185,12 @@ public class oNode {
                         oos.close();
                         byte[] datak = baos.toByteArray();
     
-                        System.out.println("====================================");
-                        for (InetAddress ip : p.getNetworks()) {
-                            System.out.println("->" + ip.getHostAddress());
+                        for (InetAddress b : bestPath) {
+                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, b, 9000);
+                            serverSocket.send(sendPacket);
+                            System.out.println("SENT: " + str + " to " + b.getHostName() + ":" + 9000);
                         }
-                        System.out.println("====================================");
-    
-                        //for (IpWithMask ip : activeRouters.) {
-                        for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
-                            //IpWithMask key = entry.getKey();
-                            //Boolean value = entry.getValue();
-                            if(entry.getValue()){
-                                InetAddress packetNetwork = entry.getKey().getNetwork();
-                                boolean sent = false; // Variável para verificar se o pacote foi enviado
-                                //System.out.print("IP: " + packetNetwork.getHostAddress() + " -> " );
-                                for (InetAddress ip_network : p.getNetworks()) {
-                                    //System.out.println("IP_NETWORK: " + ip_network);
-                                    if (ip_network.getHostAddress().equals(packetNetwork.getHostAddress())){
-                                        sent = true;
-                                        break;
-                                    }
-                                }
-                            
-                                if (!sent) {
-                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry.getKey().getAddress(), 9000);
-                                    serverSocket.send(sendPacket);
-                                    System.out.println("SENT: " + str + " to " + entry.getKey().getAddress() + ":" + 9000);
-                                }
-                            }
-                        }
+                        
 
                     }
                 } catch (ClassNotFoundException e3) {

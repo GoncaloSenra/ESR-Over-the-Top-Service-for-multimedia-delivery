@@ -23,11 +23,27 @@ class UDPClient {
         Thread thread1 = new Thread(() -> {
             try {
                 System.out.println("Thread 1");
-                byte[] receiveData = new byte[8192];
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                c.clientSocket.receive(receivePacket);
-                String modifiedSentence = new String(receivePacket.getData());
-                System.out.println("FROM SERVER:" + modifiedSentence);
+                while (true) {
+                    byte[] receiveData = new byte[8192];
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    c.clientSocket.receive(receivePacket);
+
+                    byte[] data = receivePacket.getData();
+                    
+                    ByteArrayInputStream bais = new ByteArrayInputStream(data);
+                    ObjectInputStream ois = new ObjectInputStream(bais);
+
+                    Object readObject = ois.readObject();
+                    if (readObject instanceof Packet) {
+                        Packet pdi = (Packet) readObject;
+                        String str = pdi.getData();
+
+                        System.out.println(str);
+                        
+                        System.out.println("=====================");
+                    }
+                    
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -45,25 +61,25 @@ class UDPClient {
         thread1.start();
         thread2.start();
 
-        while (true) {
-            System.out.println("sms:");
-            String sentence = inFromUser.readLine();
-            if(sentence.equals("exit")){
-                c.clientSocket.close();
-                break;
-            }
-            Packet p = new Packet(sentence);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(p);
-            oos.close();
-            byte[] data = baos.toByteArray();
+        // while (true) {
+        //     System.out.println("sms:");
+        //     String sentence = inFromUser.readLine();
+        //     if(sentence.equals("exit")){
+        //         c.clientSocket.close();
+        //         break;
+        //     }
+        //     Packet p = new Packet(sentence);
+        //     ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        //     ObjectOutputStream oos = new ObjectOutputStream(baos);
+        //     oos.writeObject(p);
+        //     oos.close();
+        //     byte[] data = baos.toByteArray();
             
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, c.ip_router.getAddress(), 9000);
+        //     DatagramPacket sendPacket = new DatagramPacket(data, data.length, c.ip_router.getAddress(), 9000);
 
-            c.clientSocket.send(sendPacket);
-            System.out.println("ENVIADO: " + sentence);
-        }
+        //     c.clientSocket.send(sendPacket);
+        //     System.out.println("ENVIADO: " + sentence);
+        // }
     }
 
     public UDPClient() throws Exception {
