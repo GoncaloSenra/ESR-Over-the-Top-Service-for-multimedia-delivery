@@ -1,7 +1,6 @@
 import java.io.Serializable;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class IpWithMask implements Serializable{
     private InetAddress address;
