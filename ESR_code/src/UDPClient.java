@@ -150,61 +150,18 @@ class UDPClient {
             
             //4
             //enviar o pacote para o melhor caminho
-            
-            byte[] receiveData = new byte[8192];
-    
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            searchSocket.receive(receivePacket);
-            
-            byte[] data2 = receivePacket.getData();
-            
+            DatagramSocket sendSocket = new DatagramSocket();
 
-            ByteArrayInputStream bais = new ByteArrayInputStream(data2);
-            ObjectInputStream ois = new ObjectInputStream(bais);
-
-            try {
-                Object readObject = ois.readObject();
-                if (readObject instanceof Packet) {
-                    Packet p2 = (Packet) readObject;
-                    String str = p.getData();
-                    InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
-                    
-                    
-                    System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 7000);
-                    
-                    System.out.println("====================================");
-
-                    InetAddress dest2 = p2.getPathInv().getLast();
-                    p2.setHops(1);
-                    ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
-                    ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
-                    oos2.writeObject(p2);
-                    oos2.close();
-                    byte[] datak = baos2.toByteArray();
-                    DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);//envia para tras na porta 6001
-                    searchSocket.send(sendPacket2);
-                    System.out.println("SENT to pc -> to: " + dest2.getHostAddress() + ":" + 7000);
-
-                }
-            } catch (ClassNotFoundException e3) {
-                e3.printStackTrace();
-            }
-
-            
-            
-
-
-
-
-
-
-
-
-
-
-            
-            
-
+            InetAddress dest2 = bestPacket.getPathInv().getLast();
+            bestPacket.setHops(1);
+            ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+            ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+            oos2.writeObject(bestPacket);
+            oos2.close();
+            byte[] datak = baos2.toByteArray();
+            DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);//envia para tras na porta 6001
+            sendSocket.send(sendPacket2);
+            System.out.println("SENT to pc -> to: " + dest2.getHostAddress() + ":" + 7000);
             
         } catch (SocketException e1) {
             e1.printStackTrace();

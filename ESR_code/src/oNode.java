@@ -50,13 +50,18 @@ public class oNode {
         Thread thread5 = new Thread(() -> {
             o.searchResult();
         });
-
+        
+        Thread thread6 = new Thread(() -> {
+            o.updateBestPath();
+        });
+        
         // Inicia as threads
         thread1.start();
         thread2.start();
         thread3.start();
         thread4.start();
         thread5.start();
+        thread6.start();
     }   
 
     private void parseConfigFile(String name) {
@@ -89,6 +94,7 @@ public class oNode {
 
     public oNode() {
         this.parseConfigFile(name);
+        bestPath = new ConcurrentLinkedQueue<InetAddress>();
 
         if (RP == true){
             this.stream = true; //TODO: debug
@@ -289,6 +295,7 @@ public class oNode {
 
             DatagramSocket BestPathSocket = new DatagramSocket(7000);
             while (true) {
+                System.out.println(bestPath.toString());
                 byte[] receiveData = new byte[8192];
     
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -308,21 +315,23 @@ public class oNode {
                         InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
                         
                         bestPath.add(IPAddress);
-                        this.stream = true;
                         
                         System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 7000);
                         
-                        System.out.println("====================================");
-                        p.setHops(p.getHops() + 1);
-                        InetAddress dest = p.getPathInv().get(p.getPathInv().size() - p.getHops());
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        ObjectOutputStream oos = new ObjectOutputStream(baos);
-                        oos.writeObject(p);
-                        oos.close();
-                        byte[] datak = baos.toByteArray();
-                        DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 7000);//envia para tras na porta 6001
-                        BestPathSocket.send(sendPacket);
-                        System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 7000);
+                        if(!stream){
+                            System.out.println("====================================");
+                            this.stream = true;
+                            p.setHops(p.getHops() + 1);
+                            InetAddress dest = p.getPathInv().get(p.getPathInv().size() - p.getHops());
+                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                            ObjectOutputStream oos = new ObjectOutputStream(baos);
+                            oos.writeObject(p);
+                            oos.close();
+                            byte[] datak = baos.toByteArray();
+                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 7000);//envia para tras na porta 6001
+                            BestPathSocket.send(sendPacket);
+                            System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 7000);
+                        }
 
                     }
                 } catch (ClassNotFoundException e3) {
