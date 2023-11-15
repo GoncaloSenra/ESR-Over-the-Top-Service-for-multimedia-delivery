@@ -95,7 +95,8 @@ class Client {
             DatagramSocket searchSocket = new DatagramSocket(6001);
             //1
             searchSocket.setSoTimeout(2500);
-            Packet p = new Packet("search0");
+            Packet p = new Packet(videoName);
+            p.setAux(1);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(p);
@@ -103,7 +104,7 @@ class Client {
             byte[] data = baos.toByteArray();
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_router.getAddress(), 6000);
             searchSocket.send(sendPacket);
-            System.out.println("SENT: " + "search0" + " to " + ip_router.getAddress() + ":" + 6000);
+            System.out.println("SENT: " + videoName + " to " + ip_router.getAddress() + ":" + 6000);
 
             try {
                 //2

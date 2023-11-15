@@ -437,10 +437,10 @@ public class oNode {
                         String str = p.getData();
                         InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
                         
-                        if(str.equals("search0")){
+                        if(p.getAux() == 1) {
                             if(!ip_clients.contains(IPAddress))
                                 ip_clients.add(IPAddress);
-                            p.setData("search");    
+                            p.setAux(0);    
                         }
                         p.setPath(IPAddress);
     
@@ -454,13 +454,11 @@ public class oNode {
                         for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
                             p.setPrevNetworks(entry.getKey().getNetwork());
                         }
-                        System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 6000);
+                        System.out.println("RECEIVED: " + p.getData() + " from " + receivePacket.getAddress() + ":" + 6000);
                         
-                        
-                        
-                        System.out.println("====================================");
                         
                         if(streams.contains(str)){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
+                            System.out.println("Contem a stream");
                             p.setHops(1);
                             InetAddress dest = p.getPath().getLast();
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -473,6 +471,7 @@ public class oNode {
                             System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 6001);
 
                         }else{ // vai procurar o destino
+                            System.out.println("Nao contem a stream");
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             ObjectOutputStream oos = new ObjectOutputStream(baos);
                             oos.writeObject(p);
@@ -483,26 +482,34 @@ public class oNode {
                                 System.out.println("->" + ip.getHostAddress());
                             }
                             System.out.println("====================================");
+                            System.out.println(activeRouters.toString());
+                            System.out.println(p.getNetworks().toString());
+                            System.out.println("====================================");
                             for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
-                            if(entry.getValue()){
-                                InetAddress packetNetwork = entry.getKey().getNetwork();
-                                boolean sent = false; // Variável para verificar se o pacote foi enviado
-                                //System.out.print("IP: " + packetNetwork.getHostAddress() + " -> " );
-                                for (InetAddress ip_network : p.getNetworks()) {
-                                    //System.out.println("IP_NETWORK: " + ip_network);
-                                    if (ip_network.getHostAddress().equals(packetNetwork.getHostAddress())){
-                                        sent = true;
-                                        break;
+                                System.out.println("##->" + entry.getKey().getNetwork().getHostAddress());
+                                if(entry.getValue()){ // se o router estiver ativo
+                                    InetAddress packetNetwork = entry.getKey().getNetwork();
+                                    boolean sent = false; // Variável para verificar se o pacote foi enviado
+                                    //System.out.print("IP: " + packetNetwork.getHostAddress() + " -> " );
+                                    for (InetAddress ip_network : p.getNetworks()) {
+                                        System.out.println("#######->" + ip_network.getHostAddress());
+                                        //System.out.println("IP_NETWORK: " + ip_network);
+                                        if (ip_network.getHostAddress().equals(packetNetwork.getHostAddress())){
+                                            sent = true;
+                                            break;
+                                        }
+                                    }
+                                
+                                    if (!sent) {
+                                        DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry.getKey().getAddress(), 6000);
+                                        searchSocket.send(sendPacket);
+                                        System.out.println("SENT: " + str + " to " + entry.getKey().getAddress() + ":" + 6000);
+                                    }
+                                    else {
+                                        System.out.println("Pacote ja enviado para este router");
                                     }
                                 }
-                            
-                                if (!sent) {
-                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry.getKey().getAddress(), 6000);
-                                    searchSocket.send(sendPacket);
-                                    System.out.println("SENT: " + str + " to " + entry.getKey().getAddress() + ":" + 6000);
-                                }
                             }
-                        }
                         }
                     }
                 } catch (ClassNotFoundException e3) {
