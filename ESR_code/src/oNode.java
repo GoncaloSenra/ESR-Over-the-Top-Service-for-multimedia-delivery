@@ -1,9 +1,10 @@
-import java.io.*;
+
 import java.net.*;
 import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.Date;
+import java.io.*;
 
 
 public class oNode {
@@ -65,6 +66,10 @@ public class oNode {
         Thread thread10 = new Thread(() -> {
             o.pingClient();
         });
+        
+        Thread thread11 = new Thread(() -> {
+            o.cancelStream();
+        });
 
         if (RP) {
             Thread thread7 = new Thread(() -> {
@@ -93,6 +98,7 @@ public class oNode {
         thread5.start();
         thread6.start();
         thread10.start();
+        thread11.start();
     }   
 
     private void parseConfigFile(String name) {
@@ -292,7 +298,30 @@ public class oNode {
                                 if (i == 2) {
                                     ip_clients.remove(entry);
                                     System.out.println("REMOVIDO");
-                                    bestPath.remove(entry);
+                                    
+                                    for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
+                                        if(entry2.getValue().contains(entry)){
+                                            ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
+                                            if(lista.size() == 1){
+                                                bestPath.remove(entry2.getKey());
+                                                streams.remove(entry2.getKey());
+
+                                                data = entry2.getKey().getBytes();
+                                                for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry3 : activeRouters.entrySet()) {
+                                                    if(entry3.getValue()){
+                                                        DatagramPacket sendPacket1 = new DatagramPacket(data, data.length, entry3.getKey().getAddress(), 6666);
+                                                        pingCSocket.send(sendPacket1);
+                                                        System.out.println("SENT: " + entry2.getKey() + " to " + entry3.getKey().getAddress().getHostName() + ":" + 6666);
+                                                    }
+                                                }
+                                                break;
+                                            }else{
+                                                lista.remove(entry);
+                                                bestPath.put(entry2.getKey(), lista);
+                                                break;
+                                            }
+                                        }
+                                    }
                                 }else {
                                     continue;
                                 }
@@ -312,6 +341,70 @@ public class oNode {
             }
 
     }
+
+    private void cancelStream(){
+        
+        try {
+            DatagramSocket cancelSocket = new DatagramSocket(6666);
+
+            while (true) {
+                byte[] receiveData = new byte[8192];
+                byte[] sendData = new byte[8192];
+                
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                cancelSocket.receive(receivePacket);
+                //System.out.println("PING recebido! ->" + receivePacket.getAddress().getHostName());
+                byte[] data = receivePacket.getData();
+                String entry = new String(data);
+                System.out.println("entry: |" + entry + "|");
+
+                System.out.println("------- CANCEL ----------");
+                System.out.println("RECEIVED: " + entry + " from " + receivePacket.getAddress() + ":" + 6666);
+                System.out.println("0best Path: " + bestPath.toString());
+                for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
+                    System.out.println("entry2: " +"|"+ entry2.getKey()+ "|" + "entry" + "|" + entry + "|");
+                    if(entry2.getKey().trim().equals(entry.trim())){
+                        ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
+                        System.out.println("lista: " + lista.toString());
+                        InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
+                        if(lista.size() == 1 && lista.contains(IPAddress)) {
+                            bestPath.remove(entry.trim());
+                            if(!RP)//DEBUG: ALDRABADO
+                                streams.remove(entry.trim());
+
+                            data = entry2.getKey().getBytes();
+
+                            for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry3 : activeRouters.entrySet()) {
+                                if(entry3.getValue() && !entry3.getKey().getNetwork().getHostAddress().equals(receivePacket.getAddress().getHostAddress())){
+                                    DatagramPacket sendPacket1 = new DatagramPacket(data, data.length, entry3.getKey().getAddress(), 6666);
+                                    cancelSocket.send(sendPacket1);
+                                    System.out.println("SENT: " + entry2.getKey() + " to " + entry3.getKey().getAddress().getHostName() + ":" + 6666);
+                                }
+                            }
+                            System.out.println("streams: " + streams.toString());
+                            System.out.println("best Path: " + bestPath.toString());
+                            break;
+                        }else {
+                            lista.remove(IPAddress);
+                            bestPath.put(entry2.getKey(), lista);
+                            break;
+                        }
+                        
+                    }
+                }
+            
+        
+            }
+            
+
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();
+        }
+        
+    }
+
 
     private void connectServer() { // recebe conexão do servidor e adiciona-o à lista de servidores
         
