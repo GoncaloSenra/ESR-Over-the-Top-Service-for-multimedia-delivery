@@ -12,11 +12,11 @@ public class oNode {
 
     public ConcurrentLinkedQueue<InetAddress> ip_clients;
 
-    public ConcurrentLinkedQueue<InetAddress> bestPath;  
+    public ConcurrentHashMap<String, ConcurrentLinkedQueue<InetAddress>> bestPath;  
 
     public static String name;
 
-    private boolean stream;
+    private ConcurrentLinkedQueue<String>  streams;
 
     private static boolean RP;
 
@@ -125,13 +125,13 @@ public class oNode {
 
     public oNode() { // construtor
         this.parseConfigFile(name);
-        bestPath = new ConcurrentLinkedQueue<InetAddress>();
+        bestPath = new ConcurrentHashMap<String,ConcurrentLinkedQueue<InetAddress>>();
         servers = new ConcurrentLinkedQueue<ServerInfo>();
-
-        if (RP == true){
-            this.stream = true;
-        }else{
-            this.stream = false;
+        ip_clients = new ConcurrentLinkedQueue<InetAddress>();
+        streams = new ConcurrentLinkedQueue<String>();
+        if(RP){//BUG: ALDRABADO
+            streams.add("X");
+            streams.add("Y");
         }
     }
 
@@ -149,23 +149,40 @@ public class oNode {
                 byte[] receiveData = new byte[8192];
                 byte[] sendData = new byte[8192];
                 
-                String str = "HELLO";
+                String x = "X";
+                String y = "Y";
                 
-                Packet p = new Packet(str);
+                Packet px = new Packet(x);
                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                 ObjectOutputStream oos = new ObjectOutputStream(baos);
-                oos.writeObject(p);
+                oos.writeObject(px);
                 oos.close();
-                byte[] datak = baos.toByteArray();
+                byte[] datax = baos.toByteArray();
+                
+                Packet py =  new Packet(y);
+                ByteArrayOutputStream baosy = new ByteArrayOutputStream();
+                ObjectOutputStream oosy = new ObjectOutputStream(baosy);
+                oosy.writeObject(py);
+                oosy.close();
+                byte[] datay = baos.toByteArray();
 
-                for (InetAddress b : bestPath) {
-                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, b, 9000);
-                    serverSocket.send(sendPacket);
-                    System.out.println("SENT: " + str + " to " + b.getHostName() + ":" + 9000);
-                }
+                for (ConcurrentHashMap.Entry<String,ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
                     
-             
+                    for (InetAddress ip : entry.getValue()) {
+                        if (entry.getKey().equals(x)) {
+                            DatagramPacket sendPacket = new DatagramPacket(datax, datax.length, ip, 9000);
+                            serverSocket.send(sendPacket);
+                            System.out.println("SENT: " + x + " to " + ip.getHostName() + ":" + 9000);
 
+                        } else if (entry.getKey().equals(y)) {
+                            DatagramPacket sendPacket = new DatagramPacket(datay, datay.length, ip, 9000);
+                            serverSocket.send(sendPacket);
+                            System.out.println("SENT: " + y + " to " + ip.getHostName() + ":" + 9000);
+
+                        }
+                        
+                    }
+                }         
             }
         } catch (SocketException e1) {
             e1.printStackTrace();
@@ -275,6 +292,7 @@ public class oNode {
                                 if (i == 2) {
                                     ip_clients.remove(entry);
                                     System.out.println("REMOVIDO");
+                                    bestPath.remove(entry);
                                 }else {
                                     continue;
                                 }
@@ -366,15 +384,22 @@ public class oNode {
                         ObjectOutputStream oos = new ObjectOutputStream(baos);
                         oos.writeObject(p);
                         oos.close();
+                        
                         byte[] datak = baos.toByteArray();
-    
-                        for (InetAddress b : bestPath) {
-                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, b, 9000);
-                            serverSocket.send(sendPacket);
-                            System.out.println("SENT: " + str + " to " + b.getHostName() + ":" + 9000);
+                        
+                        // envia a "stream" para todos os ips que quiserem a stream
+                        for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
+                            if(entry.getKey().equals(str)){
+                                for (InetAddress ip : entry.getValue()) {
+
+                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9000);
+                                    serverSocket.send(sendPacket);
+                                    System.out.println("SENT: " + str + " to " + ip.getHostAddress() + ":" + 9000);
+
+                                }
+                            }
                         }
                         
-
                     }
                 } catch (ClassNotFoundException e3) {
                     e3.printStackTrace();
@@ -434,8 +459,8 @@ public class oNode {
                         
                         
                         System.out.println("====================================");
-
-                        if(stream){//router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
+                        
+                        if(streams.contains(str)){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
                             p.setHops(1);
                             InetAddress dest = p.getPath().getLast();
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -517,13 +542,15 @@ public class oNode {
                         String str = p.getData();
                         InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
                         
-                        bestPath.add(IPAddress);
                         
                         System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 7000);
                         
-                        if(!stream){
+                        if(!streams.contains(str)){
+                            ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
+                            IPAdd.add(IPAddress);
+                            bestPath.put(str, IPAdd);
                             System.out.println("====================================");
-                            this.stream = true;
+                            this.streams.add(str);
                             p.setHops(p.getHops() + 1);
                             InetAddress dest = p.getPathInv().get(p.getPathInv().size() - p.getHops());
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -534,6 +561,8 @@ public class oNode {
                             DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 7000);//envia para tras na porta 6001
                             BestPathSocket.send(sendPacket);
                             System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 7000);
+                        } else {
+                            bestPath.get(str).add(IPAddress);//DEBUG:
                         }
 
                     }
@@ -612,13 +641,14 @@ public class oNode {
                 byte[] data = new byte[8192];
 
                 data = "PING".getBytes();
-
+                
+                Thread.sleep(5000);
+                
                 for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
                     for(int i = 0; i < 3; i++){
                     
                         try {
-
-                            Thread.sleep(1000);
+                            
                             DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getKey().getAddress(), 8500);
                             pingSocket.send(sendPacket);
                             //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
@@ -634,16 +664,16 @@ public class oNode {
                                 entry.setValue(true);
                                 //System.out.println("Tabela recebeu PONG:" + activeRouters.toString());
                             }
+                            
+                            break;
                         } catch (SocketTimeoutException e3) {
                             //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
                             if (i == 2) {
-                                System.out.println("desativado");
+                                //System.out.println("desativado: "+ entry.getKey().getAddress().getHostName());
                                 entry.setValue(false);
                             }else {
                                 continue;
                             }                
-                        } catch (InterruptedException e4) {
-                            e4.printStackTrace();
                         }
                     }
                 }
@@ -654,6 +684,8 @@ public class oNode {
             e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
+        } catch (InterruptedException e4){
+            e4.printStackTrace();
         }
         
     }

@@ -7,6 +7,8 @@ class Client {
 
     private static String routerIP;
 
+    private static String videoName;
+
     private IpWithMask ip_router;
 
     private DatagramSocket clientSocket; //9000
@@ -14,6 +16,7 @@ class Client {
     public static void main(String[] args) throws Exception {
 
         routerIP = args[0];
+        videoName = args[1];
         //System.out.println("Router IP: " + routerIP);
         Client c = new Client();
         BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
@@ -69,25 +72,6 @@ class Client {
         thread2.start();
         thread3.start();
 
-        // while (true) {
-        //     System.out.println("sms:");
-        //     String sentence = inFromUser.readLine();
-        //     if(sentence.equals("exit")){
-        //         c.clientSocket.close();
-        //         break;
-        //     }
-        //     Packet p = new Packet(sentence);
-        //     ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        //     ObjectOutputStream oos = new ObjectOutputStream(baos);
-        //     oos.writeObject(p);
-        //     oos.close();
-        //     byte[] data = baos.toByteArray();
-            
-        //     DatagramPacket sendPacket = new DatagramPacket(data, data.length, c.ip_router.getAddress(), 9000);
-
-        //     c.clientSocket.send(sendPacket);
-        //     System.out.println("ENVIADO: " + sentence);
-        // }
     }
 
     public Client() throws Exception {
@@ -178,6 +162,8 @@ class Client {
 
             InetAddress dest2 = bestPacket.getPathInv().getLast();
             bestPacket.setHops(1);
+            bestPacket.setData(videoName);
+
             ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
             ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
             oos2.writeObject(bestPacket);
