@@ -9,19 +9,21 @@ import java.io.*;
 
 public class oNode {
 
-    public ConcurrentHashMap<IpWithMask, Boolean> activeRouters;
+    public ConcurrentHashMap<IpWithMask, Boolean> activeRouters; // lista de routers ativos
 
-    public ConcurrentLinkedQueue<InetAddress> ip_clients;
+    public ConcurrentLinkedQueue<InetAddress> ip_clients; // lista de clientes ativos
 
-    public ConcurrentHashMap<String, ConcurrentLinkedQueue<InetAddress>> bestPath;  
+    public ConcurrentHashMap<String, ConcurrentLinkedQueue<InetAddress>> bestPath;  //lista de caminhos para o cliente de cada conteudo  
+    
+    public ConcurrentHashMap<String, ConcurrentLinkedQueue<InetAddress>> bestPathInv; //lista de caminhos para o RP de cada conteudo
 
-    public static String name;
+    public static String name; // nome do ficheiro de configuração
 
-    private ConcurrentLinkedQueue<String>  streams;
+    private ConcurrentLinkedQueue<String>  streams; // lista de streams ativas no node 
 
-    private static boolean RP;
+    private static boolean RP; // se o node é o RP
 
-    private ConcurrentLinkedQueue<ServerInfo> servers;
+    private ConcurrentLinkedQueue<ServerInfo> servers; // lista de servidores ativos para o RP
 
     public static void main(String[] args) {
         name = args[0];
@@ -132,6 +134,7 @@ public class oNode {
     public oNode() { // construtor
         this.parseConfigFile(name);
         bestPath = new ConcurrentHashMap<String,ConcurrentLinkedQueue<InetAddress>>();
+        bestPathInv = new ConcurrentHashMap<String,ConcurrentLinkedQueue<InetAddress>>();
         servers = new ConcurrentLinkedQueue<ServerInfo>();
         ip_clients = new ConcurrentLinkedQueue<InetAddress>();
         streams = new ConcurrentLinkedQueue<String>();
@@ -660,8 +663,18 @@ public class oNode {
                             
                             System.out.println("====================================");
                             this.streams.add(str);
+    
                             p.setHops(p.getHops() + 1);
                             InetAddress dest = p.getPathInv().get(p.getPathInv().size() - p.getHops());
+                            if(!bestPathInv.containsKey(str)){
+                                ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
+                                IPAdd.add(dest);
+                                bestPathInv.put(str, IPAdd);
+                            }else{//so adicionar o ip
+                                ConcurrentLinkedQueue<InetAddress> lista = bestPathInv.get(str);
+                                lista.add(dest);
+                                bestPathInv.put(str, lista);
+                            }
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             ObjectOutputStream oos = new ObjectOutputStream(baos);
                             oos.writeObject(p);
@@ -681,7 +694,10 @@ public class oNode {
                                 bestPath.put(str, lista);
                             }
                         }
-
+                        
+                        System.out.println("============== PATHS ==============");
+                        System.out.println("BESTPATH: " + bestPath.toString());
+                        System.out.println("BESTPATHINV: " + bestPathInv.toString());
                     }
                 } catch (ClassNotFoundException e3) {
                     e3.printStackTrace();
@@ -786,6 +802,20 @@ public class oNode {
                         } catch (SocketTimeoutException e3) {
                             //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
                             if (i == 2) {
+                                if(entry.getValue()){
+                                    /*
+                                     * Se um router for abaixo verificar pelo bestPathInv se estava a enviar algum
+                                     * conteudo para este router, se sim entao remover o router da lista de bestPathInv
+                                     * e procurar um novo caminho para receber a stream
+                                     * 
+                                     * Por outro lado no caso do router estar a enviar um conteudo para o router que foi
+                                     * desligado entao remover o conteudo da lista de bestPath
+                                     * 
+                                     * Alterar o cancelStrem / pingClient para remover o caminho pelo bestPathInv ao inves de remover
+                                     * pelos vizinhos
+                                     * 
+                                     */
+                                }
                                 //System.out.println("desativado: "+ entry.getKey().getAddress().getHostName());
                                 entry.setValue(false);
                             }else {
