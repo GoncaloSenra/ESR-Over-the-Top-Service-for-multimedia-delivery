@@ -1,1 +1,1 @@
-javac ./src/UDPClient.java ./src/Packet.java ./src/IpWithMask.java && javac ./src/oNode.java ./src/Packet.java ./src/IpWithMask.java && javac ./src/UDPServer.java 
+javac ./src/Client.java ./src/Packet.java ./src/IpWithMask.java && javac ./src/oNode.java ./src/Packet.java ./src/IpWithMask.java ./src/ServerInfo.java && javac ./src/Server.java ./src/Packet.java ./src/IpWithMask.java
