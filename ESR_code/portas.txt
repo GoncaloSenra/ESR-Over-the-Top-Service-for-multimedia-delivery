@@ -1,6 +1,10 @@
 9000 -> hello
-8000 -> ping
-8500 -> pong
+8000 -> ping client
+8500 -> pong client
+
+5000 -> ping server
+5001 -> pong server
+5500 -> connect
 
 //===========
 6000 -> search

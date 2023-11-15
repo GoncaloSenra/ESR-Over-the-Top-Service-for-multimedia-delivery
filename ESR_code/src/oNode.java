@@ -1,7 +1,10 @@
 import java.io.*;
 import java.net.*;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Date;
+
 
 public class oNode {
 
@@ -14,6 +17,8 @@ public class oNode {
     private boolean stream;
 
     private static boolean RP;
+
+    private ConcurrentLinkedQueue<ServerInfo> servers;
 
     public static void main(String[] args) {
         name = args[0];
@@ -59,8 +64,18 @@ public class oNode {
             Thread thread7 = new Thread(() -> {
                 o.helloRP();
             });
+            
+            Thread thread8 = new Thread(() -> {
+                o.pingServer();
+            });
+
+            Thread thread9 = new Thread(() -> {
+                o.helloServer();
+            });
 
             thread7.start();
+            thread8.start();
+            thread9.start();
         } else {
             thread1.start();
         }
@@ -104,6 +119,7 @@ public class oNode {
     public oNode() {
         this.parseConfigFile(name);
         bestPath = new ConcurrentLinkedQueue<InetAddress>();
+        servers = new ConcurrentLinkedQueue<ServerInfo>();
 
         if (RP == true){
             this.stream = true; //TODO: debug
@@ -121,7 +137,6 @@ public class oNode {
                 try {
                     Thread.sleep(7500);
                 } catch (InterruptedException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
                 byte[] receiveData = new byte[8192];
@@ -152,6 +167,111 @@ public class oNode {
         }
     }
     
+    private void pingServer() {
+            
+            try {
+    
+                DatagramSocket pingSocket = new DatagramSocket(5000);
+                pingSocket.setSoTimeout(1000);
+                while (true) {
+                    byte[] receiveData = new byte[8192];
+                    byte[] data = new byte[8192];
+                    
+                    Thread.sleep(5000);
+
+                    data = "PING".getBytes();
+    
+                    for (ServerInfo entry : servers) {
+                        for(int i = 0; i < 3; i++) {
+                            
+                            try {
+
+                                DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getAddress() ,5001);
+                                Date now = new Date();
+                                long timeSend = now.getTime();
+                                pingSocket.send(sendPacket);
+                                //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                                
+                                
+                                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                                pingSocket.receive(receivePacket);
+
+                                now  = new Date();
+                                long timeRecieve = now.getTime();
+
+                                long latencia = timeRecieve - timeSend;
+
+                                entry.setLatency(latencia);                 
+
+                                System.out.println(entry.getAddress().getHostName() + ": " + latencia);
+
+                                break;
+                            } catch (SocketTimeoutException e3) {
+                                //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
+                                System.out.println("ARDEU" + i);
+                                if (i == 2) {
+                                    System.out.println("REMOVIDO");
+                                    servers.remove(entry);
+                                }else {
+                                    continue;
+                                }
+                                //System.out.println("Tabela ardes -> " + activeRouters.toString());          
+                            } 
+
+                        }
+
+                    }
+                }
+            } catch (SocketException e1) {
+                e1.printStackTrace();
+            } catch (IOException e2) {
+                e2.printStackTrace();
+            }catch (InterruptedException e4){
+                e4.printStackTrace();
+            }
+
+    }
+
+    private void helloServer() {
+        // receive server connection
+        try {
+
+            while (true) {
+                byte[] receiveData = new byte[8192];
+                
+                DatagramSocket helloSocket = new DatagramSocket(5500);
+                helloSocket.setSoTimeout(1000);
+                
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                helloSocket.receive(receivePacket);
+                byte[] data = receivePacket.getData();
+                
+    
+                ByteArrayInputStream bais = new ByteArrayInputStream(data);
+                ObjectInputStream ois = new ObjectInputStream(bais);
+
+                try {
+                    Object readObject = ois.readObject();
+                    if (readObject instanceof Packet) {
+                        Packet p = (Packet) readObject;
+                        ConcurrentLinkedQueue<String> info = p.getInfo();
+                        InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
+                        
+                        servers.add(new ServerInfo(IPAddress, info,-1.0));
+
+                        System.out.println("RECEIVED: " + servers.toString() + " from " + receivePacket.getAddress() + ":" + 5500);
+                    }
+                } catch (ClassNotFoundException e3) {
+                    e3.printStackTrace();
+                }
+            }
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();
+        }
+    }
+
     private void hello() {
 
         try {

@@ -11,6 +11,7 @@ public class Packet implements Serializable{
     private ArrayList<InetAddress> pathInv;
     private ConcurrentLinkedQueue<InetAddress> networks;
     private ConcurrentLinkedQueue<InetAddress> prevNetworks;
+    private ConcurrentLinkedQueue<String> info;
     private int hops;
 
     public Packet(String data){
@@ -20,6 +21,18 @@ public class Packet implements Serializable{
         this.pathInv = new ArrayList<InetAddress>();
         this.networks = new ConcurrentLinkedQueue<InetAddress>();
         this.prevNetworks = new ConcurrentLinkedQueue<InetAddress>();
+        this.info = new ConcurrentLinkedQueue<String>();
+        this.hops = 0;
+    }
+    public Packet(ConcurrentLinkedQueue<String> info){
+        this.data = null;
+        this.IP = null;
+        this.path = new ArrayList<InetAddress>();
+        this.pathInv = new ArrayList<InetAddress>();
+        this.networks = new ConcurrentLinkedQueue<InetAddress>();
+        this.prevNetworks = new ConcurrentLinkedQueue<InetAddress>();
+        this.info = new ConcurrentLinkedQueue<String>();
+        this.info.addAll(info);
         this.hops = 0;
     }
 
@@ -45,6 +58,10 @@ public class Packet implements Serializable{
 
     public ConcurrentLinkedQueue<InetAddress> getPrevNetworks() {
         return this.prevNetworks;
+    }
+
+    public ConcurrentLinkedQueue<String> getInfo() {
+        return this.info;
     }
 
     public String getData(){
@@ -83,13 +100,17 @@ public class Packet implements Serializable{
         this.prevNetworks.addAll(n);
     }
 
+    public void setInfo(String info){
+        this.info.add(info);
+    }
+
 
     public void setData(String data){
         this.data = data;
     }
 
     public String toString(){
-        return "Data: " + data + " IP: " + IP + " Path: " + path.toString() + " Networks: " + networks.toString() + " Hops: " + hops + " PathInv: " + pathInv.toString() + " PrevNetworks: " + prevNetworks.toString();
+        return "Data: " + data + " IP: " + IP + " Path: " + path.toString() + " Networks: " + networks.toString() + " Hops: " + hops + " PathInv: " + pathInv.toString() + " PrevNetworks: " + prevNetworks.toString() + " Info: " + info.toString();
     }
 
 }
