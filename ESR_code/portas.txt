@@ -4,10 +4,13 @@
 
 5000 -> ping server
 5001 -> pong server
-5500 -> connect
+5003 -> connect
 
 //===========
 6000 -> search
 6001  -> search result
 7000 -> updateBestPath
 
+
+2000-> pingClient
+2001-> pongClient

@@ -12,8 +12,6 @@ class Server {
 
     private DatagramSocket serverSocket;
 
-    private IpWithMask ip_router;
-
     private static String RP_IP;
 
     private IpWithMask ip_rp;
@@ -29,7 +27,8 @@ class Server {
 
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
-                s.Rois.add(args[i]);
+            System.out.println();
+            s.Rois.add(args[i]);
         }
 
         // Exibe os argumentos armazenados na lista
@@ -47,33 +46,39 @@ class Server {
             s.pong();
         });
 
+
         thread1.start();
         thread2.start();
     
     }
 
-    void Server() throws Exception  {
-        this.ip_rp = new IpWithMask(RP_IP);
+    public Server() {
+        try {
+            this.ip_rp = new IpWithMask(RP_IP);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
-        this.serverSocket = new DatagramSocket(10000); 
-        Rois = new ConcurrentLinkedQueue<String>();
+        //this.serverSocket = new DatagramSocket(10000); 
 
+        this.Rois = new ConcurrentLinkedQueue<>();
+        System.out.println("-----------------");
     }
 
     
     public void connect_RP() {
         
         try {
-            DatagramSocket connSocket = new DatagramSocket();
+            DatagramSocket connSocket = new DatagramSocket(5004);
             Packet p = new Packet(Rois);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(p);
             oos.close();
             byte[] data = baos.toByteArray();
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_router.getAddress(), 5500);
+            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
             connSocket.send(sendPacket);
-            System.out.println("SENT: " + "search" + " to " + ip_router.getAddress() + ":" + 5500);
+            System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
 
         } catch (SocketException e1) {
             e1.printStackTrace();
@@ -86,7 +91,10 @@ class Server {
     
     public void pong(){ 
         try {
-            DatagramSocket pingSocket = new DatagramSocket(5001);
+        DatagramSocket pingSocket = new DatagramSocket(5001);
+        while(true){
+            //TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o rp foi down e que tem que se ligar de novo
+            
             byte[] receiveData = new byte[8192];
             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
             pingSocket.receive(receivePacket);
@@ -96,9 +104,11 @@ class Server {
 
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress() ,5000);
             pingSocket.send(sendPacket);
+
             
+        }
         } catch (SocketException e1) {
-            e1.printStackTrace();
+                e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
         }

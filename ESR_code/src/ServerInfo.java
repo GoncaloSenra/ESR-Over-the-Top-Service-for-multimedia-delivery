@@ -7,10 +7,10 @@ public class ServerInfo {
 
     private ConcurrentLinkedQueue<String> videos;
 
-    private long latency;
+    private double latency;
 
 
-    public ServerInfo(InetAddress address ,ConcurrentLinkedQueue<String> videos, long latency) {
+    public ServerInfo(InetAddress address ,ConcurrentLinkedQueue<String> videos, double latency) {
         this.address = address;
         this.videos = new ConcurrentLinkedQueue<>();
         this.videos.addAll(videos);
@@ -33,11 +33,11 @@ public class ServerInfo {
         this.videos.add(video);
     }
 
-    public long getLatency() {
+    public double getLatency() {
         return this.latency;
     }
 
-    public void setLatency(long latency) {
+    public void setLatency(double latency) {
         this.latency = latency;
     }
 

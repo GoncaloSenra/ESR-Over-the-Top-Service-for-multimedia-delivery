@@ -56,10 +56,18 @@ class Client {
                 e.printStackTrace();
             }
         });
-
+        
+        Thread thread3 = new Thread(() -> {
+            try {
+                c.pongRouter();;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
         
         thread1.start();
         thread2.start();
+        thread3.start();
 
         // while (true) {
         //     System.out.println("sms:");
@@ -103,7 +111,7 @@ class Client {
             DatagramSocket searchSocket = new DatagramSocket(6001);
             //1
             searchSocket.setSoTimeout(2500);
-            Packet p = new Packet("search");
+            Packet p = new Packet("search0");
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(p);
@@ -111,7 +119,7 @@ class Client {
             byte[] data = baos.toByteArray();
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_router.getAddress(), 6000);
             searchSocket.send(sendPacket);
-            System.out.println("SENT: " + "search" + " to " + ip_router.getAddress() + ":" + 6000);
+            System.out.println("SENT: " + "search0" + " to " + ip_router.getAddress() + ":" + 6000);
 
             try {
                 //2
@@ -184,6 +192,34 @@ class Client {
         } catch (IOException e2) {
             e2.printStackTrace();
         }
+    }
+
+
+    public void pongRouter() {
+
+        try {
+            DatagramSocket pingSocket = new DatagramSocket(2001);
+            while(true){
+                //TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o router? foi down e que tem que se ligar de novo
+                
+                byte[] receiveData = new byte[8192];
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                pingSocket.receive(receivePacket);
+                byte[] data = new byte[8192];
+                
+                data = "PONG".getBytes();
+    
+                DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress() ,2000);
+                pingSocket.send(sendPacket);
+    
+                
+            }
+            } catch (SocketException e1) {
+                    e1.printStackTrace();
+            } catch (IOException e2) {
+                e2.printStackTrace();
+            }
+
     }
 
 }

@@ -10,6 +10,8 @@ public class oNode {
 
     public ConcurrentHashMap<IpWithMask, Boolean> activeRouters;
 
+    public ConcurrentLinkedQueue<InetAddress> ip_clients;
+
     public ConcurrentLinkedQueue<InetAddress> bestPath;  
 
     public static String name;
@@ -37,7 +39,7 @@ public class oNode {
         
 
         Thread thread1 = new Thread(() -> {
-            o.hello();
+            o.StreamClient();
         });
 
         Thread thread2 = new Thread(() -> {
@@ -60,9 +62,13 @@ public class oNode {
             o.updateBestPath();
         });
         
+        Thread thread10 = new Thread(() -> {
+            o.pingClient();
+        });
+
         if (RP) {
             Thread thread7 = new Thread(() -> {
-                o.helloRP();
+                o.StreamServer();
             });
             
             Thread thread8 = new Thread(() -> {
@@ -70,7 +76,7 @@ public class oNode {
             });
 
             Thread thread9 = new Thread(() -> {
-                o.helloServer();
+                o.connectServer();
             });
 
             thread7.start();
@@ -86,6 +92,7 @@ public class oNode {
         thread4.start();
         thread5.start();
         thread6.start();
+        thread10.start();
     }   
 
     private void parseConfigFile(String name) {
@@ -116,19 +123,19 @@ public class oNode {
 
     }
 
-    public oNode() {
+    public oNode() { // construtor
         this.parseConfigFile(name);
         bestPath = new ConcurrentLinkedQueue<InetAddress>();
         servers = new ConcurrentLinkedQueue<ServerInfo>();
 
         if (RP == true){
-            this.stream = true; //TODO: debug
+            this.stream = true;
         }else{
             this.stream = false;
         }
     }
 
-    private void helloRP() {
+    private void StreamServer() { // stream desde os servers ate ao RP,(Apenas o RP tem esta funcao)
 
         try {
 
@@ -167,10 +174,10 @@ public class oNode {
         }
     }
     
-    private void pingServer() {
+    private void pingServer() { // veridica o estado dos servers e remove os que nao respondem
             
             try {
-    
+
                 DatagramSocket pingSocket = new DatagramSocket(5000);
                 pingSocket.setSoTimeout(1000);
                 while (true) {
@@ -188,7 +195,7 @@ public class oNode {
 
                                 DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getAddress() ,5001);
                                 Date now = new Date();
-                                long timeSend = now.getTime();
+                                double timeSend = now.getTime();
                                 pingSocket.send(sendPacket);
                                 //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
                                 
@@ -197,9 +204,9 @@ public class oNode {
                                 pingSocket.receive(receivePacket);
 
                                 now  = new Date();
-                                long timeRecieve = now.getTime();
+                                double timeRecieve = now.getTime();
 
-                                long latencia = timeRecieve - timeSend;
+                                double latencia = timeRecieve - timeSend;
 
                                 entry.setLatency(latencia);                 
 
@@ -232,15 +239,71 @@ public class oNode {
 
     }
 
-    private void helloServer() {
-        // receive server connection
+    private void pingClient() { // veridica o estado dos clientes e remove os que nao respondem
+            
+            try {
+    
+                DatagramSocket pingCSocket = new DatagramSocket(2000);
+                pingCSocket.setSoTimeout(1000);
+                while (true) {
+                    byte[] receiveData = new byte[8192];
+                    byte[] data = new byte[8192];
+                    
+                    Thread.sleep(5000);
+
+                    data = "PING".getBytes();
+    
+                    for (InetAddress entry : ip_clients) {
+                        for(int i = 0; i < 3; i++) {
+                            
+                            try {
+
+                                DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry, 2001);
+
+                                pingCSocket.send(sendPacket);
+                                //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                                
+                                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                                pingCSocket.receive(receivePacket);          
+
+                                System.out.println(entry.getHostName() + ": " + "ONLINE");
+
+                                break;
+                            } catch (SocketTimeoutException e3) {
+                                //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
+                                System.out.println("ARDEU" + i);
+                                if (i == 2) {
+                                    ip_clients.remove(entry);
+                                    System.out.println("REMOVIDO");
+                                }else {
+                                    continue;
+                                }
+                                //System.out.println("Tabela ardes -> " + activeRouters.toString());          
+                            } 
+
+                        }
+
+                    }
+                }
+            } catch (SocketException e1) {
+                e1.printStackTrace();
+            } catch (IOException e2) {
+                e2.printStackTrace();
+            }catch (InterruptedException e4){
+                e4.printStackTrace();
+            }
+
+    }
+
+    private void connectServer() { // recebe conexão do servidor e adiciona-o à lista de servidores
+        
         try {
+            
+            DatagramSocket helloSocket = new DatagramSocket(5003);
 
             while (true) {
                 byte[] receiveData = new byte[8192];
                 
-                DatagramSocket helloSocket = new DatagramSocket(5500);
-                helloSocket.setSoTimeout(1000);
                 
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 helloSocket.receive(receivePacket);
@@ -257,9 +320,9 @@ public class oNode {
                         ConcurrentLinkedQueue<String> info = p.getInfo();
                         InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
                         
-                        servers.add(new ServerInfo(IPAddress, info,-1.0));
+                        servers.add(new ServerInfo(IPAddress, info,-1));
 
-                        System.out.println("RECEIVED: " + servers.toString() + " from " + receivePacket.getAddress() + ":" + 5500);
+                        System.out.println("RECEIVED: " + servers.toString() + " from " + receivePacket.getAddress() + ":" + 5003);
                     }
                 } catch (ClassNotFoundException e3) {
                     e3.printStackTrace();
@@ -272,7 +335,7 @@ public class oNode {
         }
     }
 
-    private void hello() {
+    private void StreamClient() { //recebe stream do RP e envia para os clientes
 
         try {
 
@@ -325,7 +388,7 @@ public class oNode {
         }
     }
 
-    private void search() {
+    private void search() { // procura o RP e envia para tras (cliente) o caminho para o RP
 
         try {
 
@@ -348,6 +411,12 @@ public class oNode {
                         Packet p = (Packet) readObject;
                         String str = p.getData();
                         InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
+                        
+                        if(str.equals("search0")){
+                            if(!ip_clients.contains(IPAddress))
+                                ip_clients.add(IPAddress);
+                            p.setData("search");    
+                        }
                         p.setPath(IPAddress);
     
                         for (InetAddress address : p.getPrevNetworks()) {     
@@ -378,7 +447,7 @@ public class oNode {
                             searchSocket.send(sendPacket);
                             System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 6001);
 
-                        }else{//vai procurar o destino
+                        }else{ // vai procurar o destino
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             ObjectOutputStream oos = new ObjectOutputStream(baos);
                             oos.writeObject(p);
@@ -423,7 +492,7 @@ public class oNode {
         }
     }
 
-    private void updateBestPath() {
+    private void updateBestPath() { // recebe o caminho para o RP (ou para onde ja tem a stream) e guarda-o
 
         try {
 
@@ -480,8 +549,7 @@ public class oNode {
         }
     }
 
-    // encontrou a stream : caminho de volta
-    private void searchResult(){
+    private void searchResult(){ // encontrou a stream : caminho de volta
        try {
 
             DatagramSocket searchResultSocket = new DatagramSocket(6001);
@@ -546,32 +614,37 @@ public class oNode {
                 data = "PING".getBytes();
 
                 for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
+                    for(int i = 0; i < 3; i++){
                     
-                    try {
+                        try {
 
-                        Thread.sleep(1000);
-                        DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getKey().getAddress(), 8500);
-                        pingSocket.send(sendPacket);
-                        //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
-                        
-                        
-                        DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                        pingSocket.receive(receivePacket);
-                
-                        InetAddress addr = receivePacket.getAddress();                   
+                            Thread.sleep(1000);
+                            DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getKey().getAddress(), 8500);
+                            pingSocket.send(sendPacket);
+                            //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                            
+                            
+                            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                            pingSocket.receive(receivePacket);
+                    
+                            InetAddress addr = receivePacket.getAddress();                   
 
-                        if (addr.getHostName().equals(entry.getKey().getAddress().getHostName())) {
-                            //System.out.println("PONG recebido de: " + entry.getKey().getAddress().getHostName());
-                            entry.setValue(true);
-                            //System.out.println("Tabela recebeu PONG:" + activeRouters.toString());
+                            if (addr.getHostName().equals(entry.getKey().getAddress().getHostName())) {
+                                //System.out.println("PONG recebido de: " + entry.getKey().getAddress().getHostName());
+                                entry.setValue(true);
+                                //System.out.println("Tabela recebeu PONG:" + activeRouters.toString());
+                            }
+                        } catch (SocketTimeoutException e3) {
+                            //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
+                            if (i == 2) {
+                                System.out.println("desativado");
+                                entry.setValue(false);
+                            }else {
+                                continue;
+                            }                
+                        } catch (InterruptedException e4) {
+                            e4.printStackTrace();
                         }
-                    } catch (SocketTimeoutException e3) {
-                        //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
-                        entry.setValue(false);
-                        //System.out.println("Tabela ardes -> " + activeRouters.toString());
-                        continue;                
-                    } catch (InterruptedException e4) {
-                        e4.printStackTrace();
                     }
                 }
                 
@@ -617,4 +690,5 @@ public class oNode {
         }
         
     }
+
 }
