@@ -164,7 +164,7 @@ public class oNode {
                 ObjectOutputStream oosy = new ObjectOutputStream(baosy);
                 oosy.writeObject(py);
                 oosy.close();
-                byte[] datay = baos.toByteArray();
+                byte[] datay = baosy.toByteArray();
 
                 for (ConcurrentHashMap.Entry<String,ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
                     
@@ -552,10 +552,19 @@ public class oNode {
                         
                         System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 7000);
                         
+                        System.out.println(streams.toString());
+                        System.out.println("|" + str + "|");
                         if(!streams.contains(str)){
-                            ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
-                            IPAdd.add(IPAddress);
-                            bestPath.put(str, IPAdd);
+                            if(!bestPath.containsKey(str)){
+                                ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
+                                IPAdd.add(IPAddress);
+                                bestPath.put(str, IPAdd);
+                            }else{//so adicionar o ip
+                                ConcurrentLinkedQueue<InetAddress> lista = bestPath.get(str);
+                                lista.add(IPAddress);
+                                bestPath.put(str, lista);
+                            }
+                            
                             System.out.println("====================================");
                             this.streams.add(str);
                             p.setHops(p.getHops() + 1);
@@ -569,7 +578,15 @@ public class oNode {
                             BestPathSocket.send(sendPacket);
                             System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 7000);
                         } else {
-                            bestPath.get(str).add(IPAddress);//DEBUG:
+                            if(!bestPath.containsKey(str)){
+                                ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
+                                IPAdd.add(IPAddress);
+                                bestPath.put(str, IPAdd);
+                            }else{//so adicionar o ip
+                                ConcurrentLinkedQueue<InetAddress> lista = bestPath.get(str);
+                                lista.add(IPAddress);
+                                bestPath.put(str, lista);
+                            }
                         }
 
                     }
