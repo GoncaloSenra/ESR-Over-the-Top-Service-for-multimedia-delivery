@@ -433,8 +433,26 @@ public class oNode {
                             bestPath.remove(entry.trim());
                             //if(!RP)//DEBUG: ALDRABADO
                             streams.remove(entry.trim());
-                            if(RP)
-                                streams_IP.remove(entry.trim());
+                            if(RP){
+                                for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
+                                    if(entry3.getKey().trim().equals(entry.trim())){
+                                        Packet p2 = new Packet(entry.trim());
+                                        p2.setAux(0);
+                                        
+                                        ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+                                        ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+                                        oos2.writeObject(p2);
+                                        oos2.close();
+                                        byte[] datak2 = baos2.toByteArray();
+                                        DatagramPacket sendPacket2 = new DatagramPacket(datak2, datak2.length, entry3.getValue(), 9999);//envia para tras na porta 9999
+                                        cancelSocket.send(sendPacket2);
+                                        System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
+                                        streams_IP.remove(entry3.getKey());
+                                        break;
+                                    }
+                                }
+                                
+                            }
 
                             data = entry2.getKey().getBytes();
 
@@ -504,8 +522,26 @@ public class oNode {
                     if(entry2.getKey().trim().equals(entry.trim())){
                         bestPathInv.remove(entry2.getKey());
                         streams.remove(entry2.getKey().trim()); 
-                        if(RP)
-                            streams_IP.remove(entry2.getKey().trim());   
+                        if(RP){
+                            for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
+                                if(entry3.getKey().trim().equals(entry.trim())){
+                                    Packet p2 = new Packet(entry.trim());
+                                    p2.setAux(0);
+                                    
+                                    ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+                                    ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+                                    oos2.writeObject(p2);
+                                    oos2.close();
+                                    byte[] datak2 = baos2.toByteArray();
+                                    DatagramPacket sendPacket2 = new DatagramPacket(datak2, datak2.length, entry3.getValue(), 9999);//envia para tras na porta 9999
+                                    cancelSocketClient.send(sendPacket2);
+                                    System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
+                                    streams_IP.remove(entry3.getKey());
+                                    break;
+                                }
+                            }
+                        }
+
                         ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
                         System.out.println("lista: " + lista.toString());
 
@@ -1011,8 +1047,26 @@ public class oNode {
                                                 bestPath.remove(entry2.getKey());
                                                 //if(!RP)//DEBUG: ALDRABADO
                                                 streams.remove(entry2.getKey().trim());
-                                                if(RP)    
-                                                    streams_IP.remove(entry2.getKey().trim());       
+                                                if(RP){
+                                                    for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
+                                                        if(entry3.getKey().trim().equals(entry2.getKey().trim())){
+                                                            Packet p2 = new Packet(entry2.getKey().trim());
+                                                            p2.setAux(0);
+                                                            
+                                                            ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+                                                            ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+                                                            oos2.writeObject(p2);
+                                                            oos2.close();
+                                                            byte[] datak2 = baos2.toByteArray();
+                                                            DatagramPacket sendPacket2 = new DatagramPacket(datak2, datak2.length, entry3.getValue(), 9999);//envia para tras na porta 9999
+                                                            pingSocket.send(sendPacket2);
+                                                            System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
+                                                            streams_IP.remove(entry3.getKey());
+                                                            break;
+                                                        }
+                                                    }
+                                                    
+                                                }     
                                             }else{//servia mais que um cliente
                                                 ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
                                                 lista.remove(entry.getKey().getAddress());
@@ -1049,8 +1103,26 @@ public class oNode {
                                                     bestPath.remove(entry5.getKey());
                                                     //if(!RP)//DEBUG: ALDRABADO
                                                     streams.remove(entry5.getKey().trim());
-                                                    if(RP)
-                                                        streams_IP.remove(entry5.getKey().trim());
+                                                    if(RP){
+                                                        for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
+                                                            if(entry3.getKey().trim().equals(entry4.getKey().trim())){
+                                                                Packet p2 = new Packet(entry4.getKey().trim());
+                                                                p2.setAux(0);
+                                                                
+                                                                ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+                                                                ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+                                                                oos2.writeObject(p2);
+                                                                oos2.close();
+                                                                byte[] datak2 = baos2.toByteArray();
+                                                                DatagramPacket sendPacket2 = new DatagramPacket(datak2, datak2.length, entry3.getValue(), 9999);//envia para tras na porta 9999
+                                                                pingSocket.send(sendPacket2);
+                                                                System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
+                                                                streams_IP.remove(entry5.getKey());
+                                                                break;
+                                                            }
+                                                        }
+                                                        
+                                                    }
                                                         
                                                 }
                                             }
