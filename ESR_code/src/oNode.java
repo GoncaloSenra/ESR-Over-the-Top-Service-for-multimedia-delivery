@@ -27,11 +27,11 @@ public class oNode {
     private ConcurrentHashMap<String, InetAddress> streams_IP; // lista de streams ativas no node com o ip do servidor que esta a streamar
 
     private Semaphore semaphore ; // Inicializa o semáforo com uma permissão
-    /** 
-     * pingserver se der timeout 3 vezes remove o server da lista de streams_ip e 
-     * se for o unico com essa stream remove da lista de streams esse conteudo e propagar isso ate 
-     * aos clientes com esse conteudo(da para reaproveitar o cancelStream)
-     * Desbugar o Server 
+    /* 
+     *  - Retries no clientes e servidores
+     *  - Encontrar o caminho (cena extra)
+     *  - Pacotes RTP
+     * 
      */
     public static void main(String[] args) {
         name = args[0];
@@ -923,40 +923,7 @@ public class oNode {
                         
                         System.out.println(streams.toString());
                         System.out.println("|" + str + "|");
-                        // if(RP){
-                        //     if(!streams.contains(str)){//fazer um pedido a um server com aquela stream  
-                        //         InetAddress ip = null;
-                        //         double latency = 1000000000;
-                                
-                        //         for (ServerInfo server : servers) {
-                        //             ConcurrentLinkedQueue<String> videos = server.getVideos();
-                        //             if (videos.contains(str.trim())) {
-                        //                 if(latency < server.getLatency()){
-                        //                     ip = server.getAddress();
-                        //                     latency = server.getLatency();
-                        //                 }
-                                        
-                        //             }
-                        //         }
 
-                        //         Packet p2 = new Packet(str);
-                        //         p2.setAux(1);
-                                
-                        //         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        //         ObjectOutputStream oos = new ObjectOutputStream(baos);
-                        //         oos.writeObject(p2);
-                        //         oos.close();
-                        //         byte[] datak = baos.toByteArray();
-                        //         DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9999);//envia para tras na porta 9999
-                        //         BestPathSocket.send(sendPacket);
-                        //         System.out.println("SENT to ROUTER -> to: " + ip.getHostAddress() + ":" + 9999);
-                        //         streams.add(str);
-                        //         streams_IP.put(str, ip);
-                        //     }
-                        //     else{//faz nada 
-
-                        //     }
-                        // } else 
                         if(!streams.contains(str)){
                             if(!bestPath.containsKey(str)){
                                 ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
@@ -1260,18 +1227,6 @@ public class oNode {
                                         System.out.println("Path" + bestPath.toString());
                                         System.out.println("Inv" + bestPathInv.toString());
                                     }
-                                    /*
-                                     * Se um router for abaixo verificar pelo bestPathInv se estava a enviar algum
-                                     * conteudo para este router, se sim entao remover o router da lista de bestPathInv
-                                     * e procurar um novo caminho para receber a stream
-                                     * 
-                                     * Por outro lado no caso do router estar a enviar um conteudo para o router que foi
-                                     * desligado entao remover o conteudo da lista de bestPath
-                                     * 
-                                     * DONE: Alterar o cancelStrem / pingClient para remover o caminho pelo bestPathInv ao inves de remover
-                                     * pelos vizinhos
-                                     * 
-                                     */
                                 }
                                 //System.out.println("desativado: "+ entry.getKey().getAddress().getHostName());
                                 entry.setValue(false);
