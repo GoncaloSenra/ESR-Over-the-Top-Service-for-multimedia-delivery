@@ -254,7 +254,7 @@ public class oNode {
                         }
                     }
                     System.out.println("streams_ip: "+ streams_IP.toString());
-                    if (streams_IP.get(stream).getHostAddress().equals(ip.getHostAddress())) {
+                    if (!streams_IP.get(stream).getHostAddress().equals(ip.getHostAddress())) {
                         
                         Packet p = new Packet(stream);
                         p.setAux(1);
