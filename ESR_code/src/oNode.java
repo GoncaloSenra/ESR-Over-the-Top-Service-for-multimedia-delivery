@@ -382,20 +382,13 @@ public class oNode {
 
                             data = entry2.getKey().getBytes();
 
-                            // for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry3 : activeRouters.entrySet()) {
-                            //     if(entry3.getValue() && !entry3.getKey().getNetwork().getHostAddress().equals(receivePacket.getAddress().getHostAddress())){
-                            //         DatagramPacket sendPacket1 = new DatagramPacket(data, data.length, entry3.getKey().getAddress(), 6666);
-                            //         cancelSocket.send(sendPacket1);
-                            //         System.out.println("SENT: " + entry2.getKey() + " to " + entry3.getKey().getAddress().getHostName() + ":" + 6666);
-                            //     }
-                            // }
-
                             for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry3 : bestPathInv.entrySet()) {
                                 if(entry3.getKey().trim().equals(entry2.getKey().trim())){
                                     for (InetAddress ipInv : entry3.getValue()) {
                                         DatagramPacket sendPacket1 = new DatagramPacket(data, data.length, ipInv , 6666);
                                         cancelSocket.send(sendPacket1);
                                         System.out.println("SENT: " + entry2.getKey() + " to " + ipInv + ":" + 6666);
+                                        entry3.getValue().remove(ipInv);
                                     }
                                     bestPathInv.remove(entry3.getKey());
                                 }
@@ -404,10 +397,14 @@ public class oNode {
 
                             System.out.println("streams: " + streams.toString());
                             System.out.println("best Path: " + bestPath.toString());
+                            System.out.println("best Path Inv: " + bestPathInv.toString());
                             break;
                         }else {
                             lista.remove(IPAddress);
                             bestPath.put(entry2.getKey(), lista);
+                            System.out.println("streams: " + streams.toString());
+                            System.out.println("best Path: " + bestPath.toString());
+                            System.out.println("best Path Inv: " + bestPathInv.toString());
                             break;
                         }
                         
@@ -821,7 +818,32 @@ public class oNode {
                             //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
                             if (i == 2) {
                                 if(entry.getValue()){
+                                    //BESTPATHINV
+                                    for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
+                                        if(entry2.getValue().contains(entry.getKey().getAddress())){
+                                            if(entry2.getValue().size() == 1){//mandar tudo down ate ao rp 
 
+                                                for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry3 : bestPathInv.entrySet()) {
+                                                    if(entry3.getKey().trim().equals(entry2.getKey().trim())){
+                                                        data = entry2.getKey().getBytes();
+                                                        DatagramPacket sendPacket1 = new DatagramPacket(data, data.length, entry3.getValue().peek() , 6666);
+                                                        pingSocket.send(sendPacket1);
+                                                        System.out.println("SENT: " + entry2.getKey() + " to " + entry3.getValue().peek() + ":" + 6666);
+                                                        entry3.getValue().poll();
+                                                    }
+                                                }
+                                                bestPath.remove(entry2.getKey());
+                                                if(!RP)//DEBUG: ALDRABADO
+                                                    streams.remove(entry2.getKey().trim());       
+                                            }else{//servia mais que um cliente
+                                                ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
+                                                lista.remove(entry.getKey().getAddress());
+                                                bestPath.put(entry2.getKey(), lista);
+                                            }
+                                        }
+                                        System.out.println("Path" + bestPath.toString());
+                                        System.out.println("Inv" + bestPathInv.toString());
+                                    }  
                                     /*
                                      * Se um router for abaixo verificar pelo bestPathInv se estava a enviar algum
                                      * conteudo para este router, se sim entao remover o router da lista de bestPathInv
@@ -830,7 +852,7 @@ public class oNode {
                                      * Por outro lado no caso do router estar a enviar um conteudo para o router que foi
                                      * desligado entao remover o conteudo da lista de bestPath
                                      * 
-                                     * Alterar o cancelStrem / pingClient para remover o caminho pelo bestPathInv ao inves de remover
+                                     * DONE: Alterar o cancelStrem / pingClient para remover o caminho pelo bestPathInv ao inves de remover
                                      * pelos vizinhos
                                      * 
                                      */
