@@ -85,8 +85,8 @@ class Server {
         try {
             DatagramSocket connSocket = new DatagramSocket(5004);
 
-            while (true) {
-                if (retry) {
+           // while (true) {
+                //if (retry) {
                     retry = false;
                     ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
                     
@@ -102,29 +102,29 @@ class Server {
                     DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
                     connSocket.send(sendPacket);
                     System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
-                    semaphore.release();
-                }
-                Thread.sleep(5000);
+                    //semaphore.release();
+                //}
+                //Thread.sleep(2000);
                 
-            }
+            //}
 
 
         } catch (SocketException e1) {
             e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
-        } catch (InterruptedException e3) {
+        } /*catch (InterruptedException e3) {
             e3.printStackTrace();
-        }
+        }*/
         
     }
 
     
     public void pong(){ 
         try {
-            semaphore.acquire();
+            //semaphore.acquire();
             DatagramSocket pingSocket = new DatagramSocket(5001);
-            pingSocket.setSoTimeout(5000);
+            //pingSocket.setSoTimeout(5000);
             
             while(true){
                 try {
@@ -157,9 +157,9 @@ class Server {
                 e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
-        } catch (InterruptedException ie) {
+        } /*catch (InterruptedException ie) {
             System.err.println("Erro ao adquirir o semáforo");
-        }
+        }*/
     }
 
     public void checkVideo() {
