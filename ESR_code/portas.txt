@@ -17,3 +17,5 @@
 
 2000-> pingClient
 2001-> pongClient
+
+9999-> checkVideo (server)

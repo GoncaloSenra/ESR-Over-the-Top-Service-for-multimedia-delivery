@@ -1,12 +1,12 @@
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+
 
 class Server {
 
@@ -18,7 +18,7 @@ class Server {
 
     private String path;//futuramente vai ser o path do video a streamar
 
-    private ConcurrentLinkedQueue<String> Rois;//DEBUG:
+    private ConcurrentHashMap<String,Boolean> Rois;//DEBUG:
 
     public static void main(String args[]) throws Exception {
         RP_IP = args[0]; 
@@ -28,14 +28,12 @@ class Server {
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
             System.out.println();
-            s.Rois.add(args[i]);
+            s.Rois.put(args[i],false);
         }
 
         // Exibe os argumentos armazenados na lista
         System.out.println("Argumentos fornecidos:");
-        for (String argumento : s.Rois) {
-            System.out.println(argumento);
-        }
+        System.out.println(s.Rois.toString());
     
 
         Thread thread1 = new Thread(() -> {
@@ -46,9 +44,18 @@ class Server {
             s.pong();
         });
 
+        Thread thread3 = new Thread(() -> {
+            s.sendVideo();
+        });
+        
+        Thread thread4 = new Thread(() -> {
+            s.checkVideo();
+        });
 
         thread1.start();
         thread2.start();
+        thread3.start();
+        thread4.start();
     
     }
 
@@ -61,7 +68,7 @@ class Server {
 
         //this.serverSocket = new DatagramSocket(10000); 
 
-        this.Rois = new ConcurrentLinkedQueue<>();
+        this.Rois = new ConcurrentHashMap<String,Boolean>();
         System.out.println("-----------------");
     }
 
@@ -70,7 +77,12 @@ class Server {
         
         try {
             DatagramSocket connSocket = new DatagramSocket(5004);
-            Packet p = new Packet(Rois);
+            ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
+            
+            for(ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
+                lista.add(entry.getKey());
+            }
+            Packet p = new Packet(lista);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             ObjectOutputStream oos = new ObjectOutputStream(baos);
             oos.writeObject(p);
@@ -101,7 +113,7 @@ class Server {
             byte[] data = new byte[8192];
             
             data = "PONG".getBytes();
-
+        
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress() ,5000);
             pingSocket.send(sendPacket);
 
@@ -112,5 +124,73 @@ class Server {
         } catch (IOException e2) {
             e2.printStackTrace();
         }
+    }
+
+    public void checkVideo() {
+
+        try {
+            DatagramSocket checkSocket = new DatagramSocket(9999);
+
+            while (true) {
+                
+                DatagramPacket receivePacket = new DatagramPacket(new byte[8192], 8192);
+                checkSocket.receive(receivePacket);
+                
+                byte[] data = receivePacket.getData();
+                
+                ByteArrayInputStream bais = new ByteArrayInputStream(data);
+                ObjectInputStream ois = new ObjectInputStream(bais);
+
+                try {
+                    Object readObject = ois.readObject();
+                    if (readObject instanceof Packet) {
+                        Packet p = (Packet) readObject;
+                        
+                        if (p.getAux() == 1)
+                            Rois.put(p.getData(), true);
+                        else
+                            Rois.put(p.getData(), false);
+                    
+                    }
+                } catch (ClassNotFoundException e3) {
+                    e3.printStackTrace();
+                }
+            }
+            
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();  
+        }
+    }
+
+
+    public void sendVideo(){
+ 
+        try {
+            DatagramSocket videoSocket = new DatagramSocket();
+
+            while (true) {
+
+                Thread.sleep(4000);
+
+                for (ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
+                    if (entry.getValue()) {
+                        byte[] data = entry.getKey().getBytes();
+                        DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 9000);
+                        videoSocket.send(sendPacket);
+                    }
+                }
+            }
+            
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();  
+        } catch (InterruptedException e3) {
+            e3.printStackTrace();
+        }
+
+
     }
 }

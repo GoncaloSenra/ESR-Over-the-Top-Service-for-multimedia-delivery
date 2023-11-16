@@ -1,14 +1,9 @@
 
 import java.net.*;
-import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
-
-import javax.swing.RowFilter.Entry;
-
 import java.util.Date;
 import java.io.*;
-
 
 public class oNode {
 
@@ -27,6 +22,8 @@ public class oNode {
     private static boolean RP; // se o node é o RP
 
     private ConcurrentLinkedQueue<ServerInfo> servers; // lista de servidores ativos para o RP
+
+    private ConcurrentHashMap<String, InetAddress> streams_IP; // lista de streams ativas no node com o ip do servidor que esta a streamar
 
     public static void main(String[] args) {
         name = args[0];
@@ -146,6 +143,7 @@ public class oNode {
         servers = new ConcurrentLinkedQueue<ServerInfo>();
         ip_clients = new ConcurrentLinkedQueue<InetAddress>();
         streams = new ConcurrentLinkedQueue<String>();
+        streams_IP = new ConcurrentHashMap<String, InetAddress>();
         if(RP){//BUG: ALDRABADO
             streams.add("X");
             streams.add("Y");
@@ -158,48 +156,53 @@ public class oNode {
 
             DatagramSocket serverSocket = new DatagramSocket(9000);
             while (true) {
-                try {
-                    Thread.sleep(7500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
+                
                 byte[] receiveData = new byte[8192];
                 byte[] sendData = new byte[8192];
                 
-                String x = "X";
-                String y = "Y";
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                serverSocket.receive(receivePacket);
                 
-                Packet px = new Packet(x);
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                oos.writeObject(px);
-                oos.close();
-                byte[] datax = baos.toByteArray();
+                byte[] data = receivePacket.getData();
                 
-                Packet py =  new Packet(y);
-                ByteArrayOutputStream baosy = new ByteArrayOutputStream();
-                ObjectOutputStream oosy = new ObjectOutputStream(baosy);
-                oosy.writeObject(py);
-                oosy.close();
-                byte[] datay = baosy.toByteArray();
+    
+                ByteArrayInputStream bais = new ByteArrayInputStream(data);
+                ObjectInputStream ois = new ObjectInputStream(bais);
 
-                for (ConcurrentHashMap.Entry<String,ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
-                    
-                    for (InetAddress ip : entry.getValue()) {
-                        if (entry.getKey().equals(x)) {
-                            DatagramPacket sendPacket = new DatagramPacket(datax, datax.length, ip, 9000);
-                            serverSocket.send(sendPacket);
-                            System.out.println("SENT: " + x + " to " + ip.getHostName() + ":" + 9000);
+                try {
+                    Object readObject = ois.readObject();
+                    if (readObject instanceof Packet) {
+                        Packet p = (Packet) readObject;
+                        String str = p.getData();
+                        //InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
+                        
+    
+                        System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9000);
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        ObjectOutputStream oos = new ObjectOutputStream(baos);
+                        oos.writeObject(p);
+                        oos.close();
+                        
+                        byte[] datak = baos.toByteArray();
+                        
+                        // envia a "stream" para todos os ips que quiserem a stream
+                        for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
+                            if(entry.getKey().equals(str)){
+                                for (InetAddress ip : entry.getValue()) {
 
-                        } else if (entry.getKey().equals(y)) {
-                            DatagramPacket sendPacket = new DatagramPacket(datay, datay.length, ip, 9000);
-                            serverSocket.send(sendPacket);
-                            System.out.println("SENT: " + y + " to " + ip.getHostName() + ":" + 9000);
+                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9000);
+                                    serverSocket.send(sendPacket);
+                                    System.out.println("SENT: " + str + " to " + ip.getHostAddress() + ":" + 9000);
 
+                                }
+                            }
                         }
                         
                     }
-                }         
+                } catch (ClassNotFoundException e3) {
+                    e3.printStackTrace();
+                }
+       
             }
         } catch (SocketException e1) {
             e1.printStackTrace();
@@ -207,6 +210,49 @@ public class oNode {
             e2.printStackTrace();
         }
     }
+
+    // private void checkVideo(){
+    //     try {
+
+    //         DatagramSocket checkSocket = new DatagramSocket(9999);
+    //         while (true) {
+                
+    //             Thread.sleep(10000); //vai verificar se as metricas sao as melhores 
+
+    //             byte[] sendData = new byte[8192];
+                
+    //             for (String iterable_element : streams) {
+    //                 if(!streams_IP.containsKey(iterable_element.trim())){// pedir a um server que tenha a stream
+    //                     InetAddress ip = null;
+    //                     double latency = 1000000000;
+    //                     for (ServerInfo entry : servers) {
+
+                            
+
+    //                         for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
+    //                             if(entry2.getKey().equals(iterable_element)){
+    //                                 if(entry.getInfo().contains(iterable_element)){
+    //                                     streams_IP.put(iterable_element, entry.getAddress());
+    //                                     break;
+    //                                 }
+    //                             }
+    //                         }
+    //                     }
+    //                 }else{//vereficar so as metricas 
+
+    //                 }
+    //             }
+                
+       
+    //         }
+    //     } catch (SocketException e1) {
+    //         e1.printStackTrace();
+    //     } catch (IOException e2) {
+    //         e2.printStackTrace();
+    //     }catch (InterruptedException ie){
+    //         System.err.println("Erro na thread checkVideo");
+    //     }
+    // }
     
     private void pingServer() { // veridica o estado dos servers e remove os que nao respondem
             
@@ -385,8 +431,10 @@ public class oNode {
                         InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
                         if(lista.size() == 1 && lista.contains(IPAddress)) {
                             bestPath.remove(entry.trim());
-                            if(!RP)//DEBUG: ALDRABADO
-                                streams.remove(entry.trim());
+                            //if(!RP)//DEBUG: ALDRABADO
+                            streams.remove(entry.trim());
+                            if(RP)
+                                streams_IP.remove(entry.trim());
 
                             data = entry2.getKey().getBytes();
 
@@ -432,6 +480,7 @@ public class oNode {
     }
 
     private void cancelStreamClient(){ //router ate cliente a avisar que vai deixar de receber a stream "X"
+
         
         try {
             DatagramSocket cancelSocketClient = new DatagramSocket(6500);
@@ -454,7 +503,9 @@ public class oNode {
                     System.out.println("entry2: " +"|"+ entry2.getKey()+ "|" + "entry" + "|" + entry + "|");
                     if(entry2.getKey().trim().equals(entry.trim())){
                         bestPathInv.remove(entry2.getKey());
-                        streams.remove(entry2.getKey().trim());    
+                        streams.remove(entry2.getKey().trim()); 
+                        if(RP)
+                            streams_IP.remove(entry2.getKey().trim());   
                         ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
                         System.out.println("lista: " + lista.toString());
 
@@ -480,6 +531,7 @@ public class oNode {
         }
         
     }
+    
     private void connectServer() { // recebe conexão do servidor e adiciona-o à lista de servidores
         
         try {
@@ -721,6 +773,40 @@ public class oNode {
                         
                         System.out.println(streams.toString());
                         System.out.println("|" + str + "|");
+                        // if(RP){
+                        //     if(!streams.contains(str)){//fazer um pedido a um server com aquela stream  
+                        //         InetAddress ip = null;
+                        //         double latency = 1000000000;
+                                
+                        //         for (ServerInfo server : servers) {
+                        //             ConcurrentLinkedQueue<String> videos = server.getVideos();
+                        //             if (videos.contains(str.trim())) {
+                        //                 if(latency < server.getLatency()){
+                        //                     ip = server.getAddress();
+                        //                     latency = server.getLatency();
+                        //                 }
+                                        
+                        //             }
+                        //         }
+
+                        //         Packet p2 = new Packet(str);
+                        //         p2.setAux(1);
+                                
+                        //         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        //         ObjectOutputStream oos = new ObjectOutputStream(baos);
+                        //         oos.writeObject(p2);
+                        //         oos.close();
+                        //         byte[] datak = baos.toByteArray();
+                        //         DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9999);//envia para tras na porta 9999
+                        //         BestPathSocket.send(sendPacket);
+                        //         System.out.println("SENT to ROUTER -> to: " + ip.getHostAddress() + ":" + 9999);
+                        //         streams.add(str);
+                        //         streams_IP.put(str, ip);
+                        //     }
+                        //     else{//faz nada 
+
+                        //     }
+                        // } else 
                         if(!streams.contains(str)){
                             if(!bestPath.containsKey(str)){
                                 ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
@@ -746,20 +832,51 @@ public class oNode {
                                 lista.add(dest);
                                 bestPathInv.put(str, lista);
                             }
-                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                            ObjectOutputStream oos = new ObjectOutputStream(baos);
-                            oos.writeObject(p);
-                            oos.close();
-                            byte[] datak = baos.toByteArray();
-                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 7000);//envia para tras na porta 6001
-                            BestPathSocket.send(sendPacket);
-                            System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 7000);
+                            
+                            if(RP){
+                                System.out.println("RP PORRA!!");
+                                InetAddress ip = null;
+                                double latency = 1000000000;
+                                
+                                for (ServerInfo server : servers) {
+                                    ConcurrentLinkedQueue<String> videos = server.getVideos();
+                                    if (videos.contains(str.trim())) {
+                                        if(latency < server.getLatency()){
+                                            ip = server.getAddress();
+                                            latency = server.getLatency();
+                                        }
+                                        
+                                    }
+                                }
+                                System.out.println("IP escolhido: " + ip.getHostAddress() + " -> " + latency);
+                                Packet p2 = new Packet(str);
+                                p2.setAux(1);
+                                
+                                ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+                                ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+                                oos2.writeObject(p2);
+                                oos2.close();
+                                byte[] datak2 = baos2.toByteArray();
+                                DatagramPacket sendPacket2 = new DatagramPacket(datak2, datak2.length, ip, 9999);//envia para tras na porta 9999
+                                BestPathSocket.send(sendPacket2);
+                                System.out.println("SENT to s -> to: " + ip.getHostAddress() + ":" + 9999);
+                                streams_IP.put(str, ip);
+                            }else{
+                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                                oos.writeObject(p);
+                                oos.close();
+                                byte[] datak = baos.toByteArray();
+                                DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 7000);//envia para tras na porta 6001
+                                BestPathSocket.send(sendPacket);
+                                System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 7000);
+                            }
                         } else {
                             if(!bestPath.containsKey(str)){
                                 ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
                                 IPAdd.add(IPAddress);
                                 bestPath.put(str, IPAdd);
-                            }else{//so adicionar o ip
+                            } else {//so adicionar o ip
                                 ConcurrentLinkedQueue<InetAddress> lista = bestPath.get(str);
                                 lista.add(IPAddress);
                                 bestPath.put(str, lista);
@@ -889,8 +1006,10 @@ public class oNode {
                                                     }
                                                 }
                                                 bestPath.remove(entry2.getKey());
-                                                if(!RP)//DEBUG: ALDRABADO
-                                                    streams.remove(entry2.getKey().trim());       
+                                                //if(!RP)//DEBUG: ALDRABADO
+                                                streams.remove(entry2.getKey().trim());
+                                                if(RP)    
+                                                    streams_IP.remove(entry2.getKey().trim());       
                                             }else{//servia mais que um cliente
                                                 ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
                                                 lista.remove(entry.getKey().getAddress());
@@ -925,8 +1044,11 @@ public class oNode {
                                                         System.out.println("SENT: " + entry5.getKey() + " to " + ips + ":" + 6500);
                                                     }
                                                     bestPath.remove(entry5.getKey());
-                                                    if(!RP)//DEBUG: ALDRABADO
-                                                        streams.remove(entry5.getKey().trim());
+                                                    //if(!RP)//DEBUG: ALDRABADO
+                                                    streams.remove(entry5.getKey().trim());
+                                                    if(RP)
+                                                        streams_IP.remove(entry5.getKey().trim());
+                                                        
                                                 }
                                             }
 
