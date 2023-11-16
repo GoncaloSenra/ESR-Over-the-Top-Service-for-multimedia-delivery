@@ -6,6 +6,7 @@ import java.io.ObjectOutputStream;
 import java.net.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 
 
 class Server {
@@ -21,6 +22,8 @@ class Server {
     private ConcurrentHashMap<String,Boolean> Rois;//DEBUG:
 
     private Boolean retry;
+
+    private Semaphore semaphore ; // Inicializa o semáforo com uma permissão
 
     public static void main(String args[]) throws Exception {
         RP_IP = args[0]; 
@@ -73,18 +76,18 @@ class Server {
         this.Rois = new ConcurrentHashMap<String,Boolean>();
         this.retry = true;
         System.out.println("-----------------");
+        semaphore = new Semaphore(1);
     }
 
     
     public void connect_RP() {
         
         try {
+            DatagramSocket connSocket = new DatagramSocket(5004);
 
             while (true) {
-                Thread.sleep(5000);
                 if (retry) {
                     retry = false;
-                    DatagramSocket connSocket = new DatagramSocket(5004);
                     ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
                     
                     for(ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
@@ -99,7 +102,10 @@ class Server {
                     DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
                     connSocket.send(sendPacket);
                     System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
+                    semaphore.release();
                 }
+                Thread.sleep(5000);
+                
             }
 
 
@@ -116,11 +122,12 @@ class Server {
     
     public void pong(){ 
         try {
+            semaphore.acquire();
             DatagramSocket pingSocket = new DatagramSocket(5001);
-            pingSocket.setSoTimeout(2500);
-
-            try {
-                while(true){
+            pingSocket.setSoTimeout(5000);
+            
+            while(true){
+                try {
                     //TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o rp foi down e que tem que se ligar de novo
                     
                     byte[] receiveData = new byte[8192];
@@ -133,21 +140,26 @@ class Server {
                     DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress() ,5000);
                     pingSocket.send(sendPacket);
 
+                        
+                        
+                } catch (SocketTimeoutException e3) {
                     
-                }
-
-            } catch (SocketTimeoutException e3) {
-                retry = true;
-                for(ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
-                    entry.setValue(false);
+                    System.out.println("CAIU");
+                    retry = true;
+                    for(ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
+                        entry.setValue(false);
+                    }
+                    System.out.println("Rois me a pika " + Rois.toString());
                 }
             }
-        
+                
         } catch (SocketException e1) {
                 e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
-        } 
+        } catch (InterruptedException ie) {
+            System.err.println("Erro ao adquirir o semáforo");
+        }
     }
 
     public void checkVideo() {

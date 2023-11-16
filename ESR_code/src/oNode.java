@@ -27,7 +27,12 @@ public class oNode {
     private ConcurrentHashMap<String, InetAddress> streams_IP; // lista de streams ativas no node com o ip do servidor que esta a streamar
 
     private Semaphore semaphore ; // Inicializa o semáforo com uma permissão
-
+    /** 
+     * pingserver se der timeout 3 vezes remove o server da lista de streams_ip e 
+     * se for o unico com essa stream remove da lista de streams esse conteudo e propagar isso ate 
+     * aos clientes com esse conteudo(da para reaproveitar o cancelStream)
+     * Desbugar o Server 
+     */
     public static void main(String[] args) {
         name = args[0];
         if (args.length == 2) {
@@ -248,7 +253,8 @@ public class oNode {
                             }
                         }
                     }
-                    if (streams_IP.get(stream) != ip) {
+                    System.out.println("streams_ip: "+ streams_IP.toString());
+                    if (streams_IP.get(stream).getHostAddress().equals(ip.getHostAddress())) {
                         
                         Packet p = new Packet(stream);
                         p.setAux(1);
@@ -340,6 +346,34 @@ public class oNode {
                                 if (i == 2) {
                                     System.out.println("REMOVIDO");
                                     servers.remove(entry);
+                                  
+
+                                    for (ConcurrentHashMap.Entry<String, InetAddress> entry2 : streams_IP.entrySet()) {    
+                                        if(entry2.getValue().equals(entry.getAddress())){
+                                            streams_IP.remove(entry2.getKey());
+                                            
+                                            // se não houver outro server com a mesma stream então remove da lista de streams
+                                            // envia cancelamento para os outros nós
+                                            if (!streams_IP.containsKey(entry2.getKey())) {
+                                                streams.remove(entry2.getKey());
+
+                                                Packet cancel = new Packet(entry2.getKey());
+
+                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                                                oos.writeObject(cancel);
+                                                oos.close();
+
+                                                byte[] datak = baos.toByteArray();
+                                                DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry2.getValue(), 6666);
+                                                pingSocket.send(sendPacket);
+
+                                                System.out.println("SENT CANCEL -> to: " + entry2.getValue().getHostAddress() + ":" + 6666);
+                                            }
+                                        }
+                                    }
+
+
                                 }else {
                                     continue;
                                 }
