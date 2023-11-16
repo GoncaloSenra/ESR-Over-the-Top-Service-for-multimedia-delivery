@@ -179,6 +179,8 @@ class Server {
                         byte[] data = entry.getKey().getBytes();
                         DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 9000);
                         videoSocket.send(sendPacket);
+
+                        System.out.println("SENT: " + entry.getKey() + " to RP: " + ip_rp.getAddress() + ":" + 9000);
                     }
                 }
             }

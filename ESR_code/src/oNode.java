@@ -144,10 +144,10 @@ public class oNode {
         ip_clients = new ConcurrentLinkedQueue<InetAddress>();
         streams = new ConcurrentLinkedQueue<String>();
         streams_IP = new ConcurrentHashMap<String, InetAddress>();
-        if(RP){//BUG: ALDRABADO
-            streams.add("X");
-            streams.add("Y");
-        }
+        // if(RP){//BUG: ALDRABADO
+        //     streams.add("X");
+        //     streams.add("Y");
+        // }
     }
 
     private void StreamServer() { // stream desde os servers ate ao RP,(Apenas o RP tem esta funcao)
@@ -290,7 +290,7 @@ public class oNode {
 
                                 entry.setLatency(latencia);                 
 
-                                System.out.println(entry.getAddress().getHostName() + ": " + latencia);
+                                //System.out.println(entry.getAddress().getHostName() + ": " + latencia);
 
                                 break;
                             } catch (SocketTimeoutException e3) {
