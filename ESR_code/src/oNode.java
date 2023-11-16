@@ -2,6 +2,7 @@
 import java.net.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.Semaphore;
 import java.util.Date;
 import java.io.*;
 
@@ -24,6 +25,8 @@ public class oNode {
     private ConcurrentLinkedQueue<ServerInfo> servers; // lista de servidores ativos para o RP
 
     private ConcurrentHashMap<String, InetAddress> streams_IP; // lista de streams ativas no node com o ip do servidor que esta a streamar
+
+    private Semaphore semaphore ; // Inicializa o semáforo com uma permissão
 
     public static void main(String[] args) {
         name = args[0];
@@ -77,6 +80,7 @@ public class oNode {
             o.cancelStreamClient();
         });
 
+
         if (RP) {
             Thread thread7 = new Thread(() -> {
                 o.StreamServer();
@@ -90,9 +94,15 @@ public class oNode {
                 o.connectServer();
             });
 
+            Thread thread13 = new Thread(() -> {
+                o.checkVideo();
+            });
+            
+            
             thread7.start();
             thread8.start();
             thread9.start();
+            thread13.start();
         } else {
             thread1.start();
         }
@@ -106,6 +116,7 @@ public class oNode {
         thread10.start();
         thread11.start();
         thread12.start();
+        
     }   
 
     private void parseConfigFile(String name) {
@@ -144,10 +155,7 @@ public class oNode {
         ip_clients = new ConcurrentLinkedQueue<InetAddress>();
         streams = new ConcurrentLinkedQueue<String>();
         streams_IP = new ConcurrentHashMap<String, InetAddress>();
-        // if(RP){//BUG: ALDRABADO
-        //     streams.add("X");
-        //     streams.add("Y");
-        // }
+        semaphore = new Semaphore(1);
     }
 
     private void StreamServer() { // stream desde os servers ate ao RP,(Apenas o RP tem esta funcao)
@@ -211,48 +219,81 @@ public class oNode {
         }
     }
 
-    // private void checkVideo(){
-    //     try {
+    private void checkVideo(){
+        try {
 
-    //         DatagramSocket checkSocket = new DatagramSocket(9999);
-    //         while (true) {
+            DatagramSocket checkSocket = new DatagramSocket(9999);
+            while (true) {
                 
-    //             Thread.sleep(10000); //vai verificar se as metricas sao as melhores 
+                Thread.sleep(10000); //vai verificar se as metricas sao as melhores 
+                System.out.println("checkVideo pre semaphore");
+                semaphore.acquire();
+                System.out.println("checkVideo pos semaphore");
+                byte[] sendData = new byte[8192];
+                System.out.println(streams.toString());
+                for (String stream : streams) {
+                    
+                    InetAddress ip = null;
+                    double latency = 1000000000;
+                    for (ServerInfo entry : servers) {
 
-    //             byte[] sendData = new byte[8192];
+                        for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
+                            if(entry2.getKey().equals(stream)){
+                                if(entry.getVideos().contains(stream)){
+                                    if (latency > entry.getLatency()) {
+                                        ip = entry.getAddress();
+                                        latency = entry.getLatency();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    if (streams_IP.get(stream) != ip) {
+                        
+                        Packet p = new Packet(stream);
+                        p.setAux(1);
+                        
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        ObjectOutputStream oos = new ObjectOutputStream(baos);
+                        oos.writeObject(p);
+                        oos.close();
+
+                        byte[] datak = baos.toByteArray();
+                        DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9999);
+                        checkSocket.send(sendPacket);
+
+                        System.out.println("SENT to s -> to: " + ip.getHostAddress() + ":" + 9999);
+                        
+                        InetAddress oldAddress = streams_IP.get(stream);
+                        streams_IP.put(stream, ip);
+
+                        p.setAux(0);
+  
+                        ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+                        ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+                        oos2.writeObject(p);
+                        oos2.close();
+
+                        byte[] datak2 = baos2.toByteArray();
+                        DatagramPacket sendPacket2 = new DatagramPacket(datak2, datak2.length, oldAddress, 9999);
+                        checkSocket.send(sendPacket2);
+
+                        System.out.println("SENT to s -> to: " + oldAddress.getHostAddress() + ":" + 9999);
+
+                        
+                    }
+                }
                 
-    //             for (String iterable_element : streams) {
-    //                 if(!streams_IP.containsKey(iterable_element.trim())){// pedir a um server que tenha a stream
-    //                     InetAddress ip = null;
-    //                     double latency = 1000000000;
-    //                     for (ServerInfo entry : servers) {
-
-                            
-
-    //                         for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
-    //                             if(entry2.getKey().equals(iterable_element)){
-    //                                 if(entry.getInfo().contains(iterable_element)){
-    //                                     streams_IP.put(iterable_element, entry.getAddress());
-    //                                     break;
-    //                                 }
-    //                             }
-    //                         }
-    //                     }
-    //                 }else{//vereficar so as metricas 
-
-    //                 }
-    //             }
-                
-       
-    //         }
-    //     } catch (SocketException e1) {
-    //         e1.printStackTrace();
-    //     } catch (IOException e2) {
-    //         e2.printStackTrace();
-    //     }catch (InterruptedException ie){
-    //         System.err.println("Erro na thread checkVideo");
-    //     }
-    // }
+                semaphore.release();
+            }
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();
+        }catch (InterruptedException ie){
+            System.err.println("Erro na thread checkVideo");
+        }
+    }
     
     private void pingServer() { // veridica o estado dos servers e remove os que nao respondem
             
@@ -432,10 +473,11 @@ public class oNode {
                         if(lista.size() == 1 && lista.contains(IPAddress)) {
                             bestPath.remove(entry.trim());
                             //if(!RP)//DEBUG: ALDRABADO
-                            streams.remove(entry.trim());
+                            
                             if(RP){
                                 for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
                                     if(entry3.getKey().trim().equals(entry.trim())){
+                                        semaphore.acquire();
                                         Packet p2 = new Packet(entry.trim());
                                         p2.setAux(0);
                                         
@@ -448,10 +490,14 @@ public class oNode {
                                         cancelSocket.send(sendPacket2);
                                         System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
                                         streams_IP.remove(entry3.getKey());
+                                        streams.remove(entry.trim());
+                                        semaphore.release();
                                         break;
                                     }
                                 }
                                 
+                            }else{
+                                streams.remove(entry.trim());
                             }
 
                             data = entry2.getKey().getBytes();
@@ -493,6 +539,8 @@ public class oNode {
             e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
+        } catch (InterruptedException ie){
+            System.err.println("Erro na thread cancelStream");
         }
         
     }
@@ -521,10 +569,11 @@ public class oNode {
                     System.out.println("entry2: " +"|"+ entry2.getKey()+ "|" + "entry" + "|" + entry + "|");
                     if(entry2.getKey().trim().equals(entry.trim())){
                         bestPathInv.remove(entry2.getKey());
-                        streams.remove(entry2.getKey().trim()); 
+                        
                         if(RP){
                             for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
                                 if(entry3.getKey().trim().equals(entry.trim())){
+                                    semaphore.acquire();
                                     Packet p2 = new Packet(entry.trim());
                                     p2.setAux(0);
                                     
@@ -537,9 +586,13 @@ public class oNode {
                                     cancelSocketClient.send(sendPacket2);
                                     System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
                                     streams_IP.remove(entry3.getKey());
+                                    streams.remove(entry2.getKey().trim()); 
+                                    semaphore.release();
                                     break;
                                 }
                             }
+                        }else{
+                            streams.remove(entry2.getKey().trim()); 
                         }
 
                         ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
@@ -564,6 +617,8 @@ public class oNode {
             e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
+        } catch ( InterruptedException ie){
+            System.err.println("Erro na thread cancelStreamClient");
         }
         
     }
@@ -1045,11 +1100,11 @@ public class oNode {
                                                     }
                                                 }
                                                 bestPath.remove(entry2.getKey());
-                                                //if(!RP)//DEBUG: ALDRABADO
-                                                streams.remove(entry2.getKey().trim());
+                                                
                                                 if(RP){
                                                     for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
                                                         if(entry3.getKey().trim().equals(entry2.getKey().trim())){
+                                                            semaphore.acquire();
                                                             Packet p2 = new Packet(entry2.getKey().trim());
                                                             p2.setAux(0);
                                                             
@@ -1062,10 +1117,14 @@ public class oNode {
                                                             pingSocket.send(sendPacket2);
                                                             System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
                                                             streams_IP.remove(entry3.getKey());
+                                                            streams.remove(entry2.getKey().trim());
+                                                            semaphore.release();
                                                             break;
                                                         }
                                                     }
                                                     
+                                                }else{
+                                                    streams.remove(entry2.getKey().trim());
                                                 }     
                                             }else{//servia mais que um cliente
                                                 ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
@@ -1101,11 +1160,11 @@ public class oNode {
                                                         System.out.println("SENT: " + entry5.getKey() + " to " + ips + ":" + 6500);
                                                     }
                                                     bestPath.remove(entry5.getKey());
-                                                    //if(!RP)//DEBUG: ALDRABADO
-                                                    streams.remove(entry5.getKey().trim());
+                                                    
                                                     if(RP){
                                                         for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
                                                             if(entry3.getKey().trim().equals(entry4.getKey().trim())){
+                                                                semaphore.acquire();
                                                                 Packet p2 = new Packet(entry4.getKey().trim());
                                                                 p2.setAux(0);
                                                                 
@@ -1118,10 +1177,14 @@ public class oNode {
                                                                 pingSocket.send(sendPacket2);
                                                                 System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
                                                                 streams_IP.remove(entry5.getKey());
+                                                                streams.remove(entry5.getKey().trim());
+                                                                semaphore.release();
                                                                 break;
                                                             }
                                                         }
                                                         
+                                                    }else{
+                                                        streams.remove(entry5.getKey().trim());
                                                     }
                                                         
                                                 }

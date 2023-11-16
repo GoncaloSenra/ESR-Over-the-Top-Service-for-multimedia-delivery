@@ -20,6 +20,8 @@ class Server {
 
     private ConcurrentHashMap<String,Boolean> Rois;//DEBUG:
 
+    private Boolean retry;
+
     public static void main(String args[]) throws Exception {
         RP_IP = args[0]; 
 
@@ -69,6 +71,7 @@ class Server {
         //this.serverSocket = new DatagramSocket(10000); 
 
         this.Rois = new ConcurrentHashMap<String,Boolean>();
+        this.retry = true;
         System.out.println("-----------------");
     }
 
@@ -76,26 +79,36 @@ class Server {
     public void connect_RP() {
         
         try {
-            DatagramSocket connSocket = new DatagramSocket(5004);
-            ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
-            
-            for(ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
-                lista.add(entry.getKey());
+
+            while (true) {
+                Thread.sleep(5000);
+                if (retry) {
+                    retry = false;
+                    DatagramSocket connSocket = new DatagramSocket(5004);
+                    ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
+                    
+                    for(ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
+                        lista.add(entry.getKey());
+                    }
+                    Packet p = new Packet(lista);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos);
+                    oos.writeObject(p);
+                    oos.close();
+                    byte[] data = baos.toByteArray();
+                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
+                    connSocket.send(sendPacket);
+                    System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
+                }
             }
-            Packet p = new Packet(lista);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(p);
-            oos.close();
-            byte[] data = baos.toByteArray();
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
-            connSocket.send(sendPacket);
-            System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
+
 
         } catch (SocketException e1) {
             e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
+        } catch (InterruptedException e3) {
+            e3.printStackTrace();
         }
         
     }
@@ -103,27 +116,38 @@ class Server {
     
     public void pong(){ 
         try {
-        DatagramSocket pingSocket = new DatagramSocket(5001);
-        while(true){
-            //TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o rp foi down e que tem que se ligar de novo
-            
-            byte[] receiveData = new byte[8192];
-            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-            pingSocket.receive(receivePacket);
-            byte[] data = new byte[8192];
-            
-            data = "PONG".getBytes();
-        
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress() ,5000);
-            pingSocket.send(sendPacket);
+            DatagramSocket pingSocket = new DatagramSocket(5001);
+            pingSocket.setSoTimeout(2500);
 
-            
-        }
+            try {
+                while(true){
+                    //TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o rp foi down e que tem que se ligar de novo
+                    
+                    byte[] receiveData = new byte[8192];
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    pingSocket.receive(receivePacket);
+                    byte[] data = new byte[8192];
+                    
+                    data = "PONG".getBytes();
+                
+                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress() ,5000);
+                    pingSocket.send(sendPacket);
+
+                    
+                }
+
+            } catch (SocketTimeoutException e3) {
+                retry = true;
+                for(ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
+                    entry.setValue(false);
+                }
+            }
+        
         } catch (SocketException e1) {
                 e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
-        }
+        } 
     }
 
     public void checkVideo() {
