@@ -7,6 +7,9 @@
 5003 -> connect
 
 //===========
+6666 -> router ate RP deixar de streamar
+6500 -> router ate cliente a avisar que vai deixar de receber a stream "X"
+
 6000 -> search
 6001  -> search result
 7000 -> updateBestPath
