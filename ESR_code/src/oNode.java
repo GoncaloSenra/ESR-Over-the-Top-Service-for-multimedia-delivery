@@ -283,7 +283,6 @@ public class oNode {
                         byte[] datak2 = baos2.toByteArray();
                         DatagramPacket sendPacket2 = new DatagramPacket(datak2, datak2.length, oldAddress, 9999);
                         checkSocket.send(sendPacket2);
-
                         System.out.println("SENT to s -> to: " + oldAddress.getHostAddress() + ":" + 9999);
 
                         
@@ -303,93 +302,121 @@ public class oNode {
     
     private void pingServer() { // veridica o estado dos servers e remove os que nao respondem
             
-            try {
+        try {
 
-                DatagramSocket pingSocket = new DatagramSocket(5000);
-                pingSocket.setSoTimeout(1000);
-                while (true) {
-                    byte[] receiveData = new byte[8192];
-                    byte[] data = new byte[8192];
-                    
-                    Thread.sleep(2000);
+            DatagramSocket pingSocket = new DatagramSocket(5000);
+            pingSocket.setSoTimeout(1000);
+            while (true) {
+                byte[] receiveData = new byte[8192];
+                byte[] data = new byte[8192];
+                
+                Thread.sleep(2000);
 
-                    data = "PING".getBytes();
-    
-                    for (ServerInfo entry : servers) {
-                        for(int i = 0; i < 3; i++) {
+                data = "PING".getBytes();
+
+                for (ServerInfo entry : servers) {
+                    for(int i = 0; i < 3; i++) {
+                        
+                        try {
+
+                            DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getAddress() ,5001);
+                            Date now = new Date();
+                            double timeSend = now.getTime();
+                            pingSocket.send(sendPacket);
+                            //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
                             
-                            try {
+                            
+                            DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                            pingSocket.receive(receivePacket);
 
-                                DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getAddress() ,5001);
-                                Date now = new Date();
-                                double timeSend = now.getTime();
-                                pingSocket.send(sendPacket);
-                                //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                            now  = new Date();
+                            double timeRecieve = now.getTime();
+
+                            double latencia = timeRecieve - timeSend;
+
+                            entry.setLatency(latencia);                 
+
+                            //System.out.println(entry.getAddress().getHostName() + ": " + latencia);
+
+                            break;
+                        } catch (SocketTimeoutException e3) {
+                            //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
+                            System.out.println("ARDEU" + i);
+                            if (i == 2) {
+                                semaphore.acquire();
+                                System.out.println("REMOVIDO");
+                                servers.remove(entry);
                                 
-                                
-                                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                                pingSocket.receive(receivePacket);
+                                for (ConcurrentHashMap.Entry<String, InetAddress> entry2 : streams_IP.entrySet()) {    
+                                    if(entry2.getValue().equals(entry.getAddress())){
+                                        streams_IP.remove(entry2.getKey());
+                                        
+                                        // se não houver outro server com a mesma stream então remove da lista de streams
+                                        // envia cancelamento para os outros nós
+                                        InetAddress ip = null;
+                                        double latency = 1000000000;
+                                        for (ServerInfo s : servers) {
 
-                                now  = new Date();
-                                double timeRecieve = now.getTime();
+                                            if(s.getVideos().contains(entry2.getKey())){
+                                                if (latency > entry.getLatency()) {
+                                                    ip = entry.getAddress();
+                                                    latency = entry.getLatency();
+                                                }
+                                            }
 
-                                double latencia = timeRecieve - timeSend;
+                                        }
 
-                                entry.setLatency(latencia);                 
-
-                                //System.out.println(entry.getAddress().getHostName() + ": " + latencia);
-
-                                break;
-                            } catch (SocketTimeoutException e3) {
-                                //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
-                                System.out.println("ARDEU" + i);
-                                if (i == 2) {
-                                    System.out.println("REMOVIDO");
-                                    servers.remove(entry);
-                                  
-
-                                    for (ConcurrentHashMap.Entry<String, InetAddress> entry2 : streams_IP.entrySet()) {    
-                                        if(entry2.getValue().equals(entry.getAddress())){
-                                            streams_IP.remove(entry2.getKey());
+                                        if (ip != null) {
+                                            System.out.println("streams_ip: "+ streams_IP.toString());
+                                            Packet p = new Packet(entry2.getKey());
+                                            p.setAux(1);
                                             
-                                            // se não houver outro server com a mesma stream então remove da lista de streams
-                                            // envia cancelamento para os outros nós
-                                            if (!streams_IP.containsKey(entry2.getKey())) {
-                                                streams.remove(entry2.getKey());
+                                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                            ObjectOutputStream oos = new ObjectOutputStream(baos);
+                                            oos.writeObject(p);
+                                            oos.close();
 
-                                                byte[] datak = entry2.getKey().getBytes();
-                                                
-                                                for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry3 : bestPath.entrySet()){
-                                                    if (entry3.getKey().trim().equals(entry2.getKey().trim())) {
-                                                        for (InetAddress ip3 : entry3.getValue()) {
-                                                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip3, 6500);
-                                                            pingSocket.send(sendPacket);
-                                                            System.out.println("SENT CANCEL -> to: " + ip3.getHostAddress() + ":" + 6500);
-                                                        }
+                                            byte[] datak = baos.toByteArray();
+                                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9999);
+                                            pingSocket.send(sendPacket);
+
+                                            streams_IP.put(entry2.getKey(), ip);
+                                        }else{
+                                            streams.remove(entry2.getKey());
+                                            byte[] datak = entry2.getKey().getBytes();
+                                            
+                                            for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry3 : bestPath.entrySet()){
+                                                if (entry3.getKey().trim().equals(entry2.getKey().trim())) {
+                                                    for (InetAddress ip3 : entry3.getValue()) {
+                                                        DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip3, 6500);
+                                                        pingSocket.send(sendPacket);
+                                                        System.out.println("SENT CANCEL -> to: " + ip3.getHostAddress() + ":" + 6500);
                                                     }
+                                                    bestPath.remove(entry3.getKey());
                                                 }
                                             }
                                         }
                                     }
-
-
-                                }else {
-                                    continue;
                                 }
-                                //System.out.println("Tabela ardes -> " + activeRouters.toString());          
-                            } 
 
-                        }
+                                semaphore.release();
+                            }else {
+                                continue;
+                            }
+                            //System.out.println("Tabela ardes -> " + activeRouters.toString());          
+                        } 
 
                     }
+
                 }
-            } catch (SocketException e1) {
-                e1.printStackTrace();
-            } catch (IOException e2) {
-                e2.printStackTrace();
-            }catch (InterruptedException e4){
-                e4.printStackTrace();
             }
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        } catch (IOException e2) {
+            e2.printStackTrace();
+        }catch (InterruptedException e4){
+            e4.printStackTrace();
+        }
 
     }
 
