@@ -676,7 +676,7 @@ public class oNode {
                         System.out.println("RECEIVED: " + p.getData() + " from " + receivePacket.getAddress() + ":" + 6000);
                         
                         
-                        if(streams.contains(str)){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
+                        if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
                             System.out.println("Contem a stream");
                             p.setHops(1);
                             InetAddress dest = p.getPath().getLast();
@@ -821,17 +821,6 @@ public class oNode {
                             System.out.println("====================================");
                             this.streams.add(str);
     
-                            p.setHops(p.getHops() + 1);
-                            InetAddress dest = p.getPathInv().get(p.getPathInv().size() - p.getHops());
-                            if(!bestPathInv.containsKey(str)){
-                                ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
-                                IPAdd.add(dest);
-                                bestPathInv.put(str, IPAdd);
-                            }else{//so adicionar o ip
-                                ConcurrentLinkedQueue<InetAddress> lista = bestPathInv.get(str);
-                                lista.add(dest);
-                                bestPathInv.put(str, lista);
-                            }
                             
                             if(RP){
                                 System.out.println("RP PORRA!!");
@@ -841,7 +830,7 @@ public class oNode {
                                 for (ServerInfo server : servers) {
                                     ConcurrentLinkedQueue<String> videos = server.getVideos();
                                     if (videos.contains(str.trim())) {
-                                        if(latency < server.getLatency()){
+                                        if(latency > server.getLatency()){
                                             ip = server.getAddress();
                                             latency = server.getLatency();
                                         }
@@ -862,6 +851,20 @@ public class oNode {
                                 System.out.println("SENT to s -> to: " + ip.getHostAddress() + ":" + 9999);
                                 streams_IP.put(str, ip);
                             }else{
+
+                                p.setHops(p.getHops() + 1);
+                                InetAddress dest = p.getPathInv().get(p.getPathInv().size() - p.getHops());
+                                if(!bestPathInv.containsKey(str)){
+                                    ConcurrentLinkedQueue<InetAddress> IPAdd = new ConcurrentLinkedQueue<InetAddress>();
+                                    IPAdd.add(dest);
+                                    bestPathInv.put(str, IPAdd);
+                                }else{//so adicionar o ip
+                                    ConcurrentLinkedQueue<InetAddress> lista = bestPathInv.get(str);
+                                    lista.add(dest);
+                                    bestPathInv.put(str, lista);
+                                }
+
+
                                 ByteArrayOutputStream baos = new ByteArrayOutputStream();
                                 ObjectOutputStream oos = new ObjectOutputStream(baos);
                                 oos.writeObject(p);

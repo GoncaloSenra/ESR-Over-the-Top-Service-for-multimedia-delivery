@@ -173,10 +173,20 @@ class Server {
             while (true) {
 
                 Thread.sleep(4000);
-
+                
+                
                 for (ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()){
                     if (entry.getValue()) {
-                        byte[] data = entry.getKey().getBytes();
+                        Packet p = new Packet(entry.getKey());
+
+                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                        ObjectOutputStream oos = new ObjectOutputStream(baos);
+                        oos.writeObject(p);
+                        oos.close();
+                        
+                        byte[] data = baos.toByteArray();
+                        
+
                         DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 9000);
                         videoSocket.send(sendPacket);
 
