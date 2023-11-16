@@ -357,18 +357,17 @@ public class oNode {
                                             if (!streams_IP.containsKey(entry2.getKey())) {
                                                 streams.remove(entry2.getKey());
 
-                                                Packet cancel = new Packet(entry2.getKey());
-
-                                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                                                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                                                oos.writeObject(cancel);
-                                                oos.close();
-
-                                                byte[] datak = baos.toByteArray();
-                                                DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry2.getValue(), 6666);
-                                                pingSocket.send(sendPacket);
-
-                                                System.out.println("SENT CANCEL -> to: " + entry2.getValue().getHostAddress() + ":" + 6666);
+                                                byte[] datak = entry2.getKey().getBytes();
+                                                
+                                                for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry3 : bestPath.entrySet()){
+                                                    if (entry3.getKey().trim().equals(entry2.getKey().trim())) {
+                                                        for (InetAddress ip3 : entry3.getValue()) {
+                                                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip3, 6500);
+                                                            pingSocket.send(sendPacket);
+                                                            System.out.println("SENT CANCEL -> to: " + ip3.getHostAddress() + ":" + 6500);
+                                                        }
+                                                    }
+                                                }
                                             }
                                         }
                                     }
@@ -479,7 +478,7 @@ public class oNode {
 
     }
 
-    private void cancelStream(){ //cancelar o envio de uma stream para um cliente
+    private void cancelStream(){ //cancelar o envio de uma stream para um cliente de um router ate ao RP/biforcacao
         
         try {
             DatagramSocket cancelSocket = new DatagramSocket(6666);
@@ -506,7 +505,6 @@ public class oNode {
                         InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
                         if(lista.size() == 1 && lista.contains(IPAddress)) {
                             bestPath.remove(entry.trim());
-                            //if(!RP)//DEBUG: ALDRABADO
                             
                             if(RP){
                                 for (ConcurrentHashMap.Entry<String, InetAddress> entry3 : streams_IP.entrySet()) {
@@ -579,7 +577,7 @@ public class oNode {
         
     }
 
-    private void cancelStreamClient(){ //router ate cliente a avisar que vai deixar de receber a stream "X"
+    private void cancelStreamClient() { //router ate cliente a avisar que vai deixar de receber a stream "X"
 
         
         try {
