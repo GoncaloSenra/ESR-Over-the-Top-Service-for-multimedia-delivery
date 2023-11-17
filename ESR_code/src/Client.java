@@ -3,6 +3,16 @@ import java.net.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.awt.*;
+import java.awt.event.*;
+import javax.swing.*;
+import javax.swing.Timer;
+
+
+
 class Client {
 
     private static String routerIP;
@@ -12,6 +22,15 @@ class Client {
     private IpWithMask ip_router;
 
     private DatagramSocket clientSocket; //9000
+
+    // RTP variables:
+    // ----------------
+    DatagramPacket rcvdp; // UDP packet received from the server (to receive)
+    DatagramSocket RTPsocket; // socket to be used to send and receive UDP packet
+
+    Timer cTimer; // timer used to receive data from the UDP socket
+    byte[] cBuf; // buffer used to store data received from the server
+
     
     public static void main(String[] args) throws Exception {
 
@@ -68,9 +87,9 @@ class Client {
             }
         });
         
-        thread1.start();
-        thread2.start();
-        thread3.start();
+        //thread1.start();
+        //thread2.start();
+        //thread3.start();
 
     }
 
@@ -79,6 +98,20 @@ class Client {
         this.ip_router = new IpWithMask(routerIP);
 
         this.clientSocket = new DatagramSocket(9000); 
+
+        // init para a parte do cliente
+        // --------------------------
+        cTimer = new Timer(20, new clientTimerListener());
+        cTimer.setInitialDelay(0);
+        cTimer.setCoalesce(true);
+        cBuf = new byte[15000]; // allocate enough memory for the buffer used to receive data from the server
+
+        // try {
+        //     // socket e video
+        //     clientSocket.setSoTimeout(5000); // setimeout to 5s
+        // } catch (SocketException e) {
+        //     System.out.println("Cliente: erro no socket: " + e.getMessage());
+        // }
         
     }
 
@@ -207,6 +240,46 @@ class Client {
                 e2.printStackTrace();
             }
 
+    }
+
+    class clientTimerListener implements ActionListener {
+        public void actionPerformed(ActionEvent e) {
+
+            // Construct a DatagramPacket to receive data from the UDP socket
+            rcvdp = new DatagramPacket(cBuf, cBuf.length);
+
+            try {
+                // receive the DP from the socket:
+                RTPsocket.receive(rcvdp);
+
+                // create an RTPpacket object from the DP
+                RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
+
+                // print important header fields of the RTP packet received:
+                System.out.println("Got RTP packet with SeqNum # " + rtp_packet.getsequencenumber() + " TimeStamp "
+                        + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
+
+                // print header bitstream:
+                rtp_packet.printheader();
+
+                // get the payload bitstream from the RTPpacket object
+                int payload_length = rtp_packet.getpayload_length();
+                byte[] payload = new byte[payload_length];
+                rtp_packet.getpayload(payload);
+
+                // get an Image object from the payload bitstream
+                Toolkit toolkit = Toolkit.getDefaultToolkit();
+                Image image = toolkit.createImage(payload, 0, payload_length);
+
+                // display the image as an ImageIcon object
+                //icon = new ImageIcon(image);
+                //iconLabel.setIcon(icon);
+            } catch (InterruptedIOException iioe) {
+                System.out.println("Nothing to read");
+            } catch (IOException ioe) {
+                System.out.println("Exception caught: " + ioe);
+            }
+        }
     }
 
 }
