@@ -162,6 +162,7 @@ class Server  {
                     retry = true;
                     for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
                         if (!(entry.getValue() instanceof NullThread)) {
+                            System.err.println("A parar o video " + entry.getKey());
                             entry.getValue().interrupt();
                             entry.setValue(new NullThread());
 
@@ -231,7 +232,7 @@ class Server  {
                             for(ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()){
                                 if(entry.getKey().trim().equals(p.getData().trim())){
                                     if(!(entry.getValue() instanceof NullThread)){
-                                        entry.getValue().interrupt();
+                                        entry.getValue().stop();
                                         Rois.put(entry.getKey(), new NullThread());
                                     }
                                 }
