@@ -9,15 +9,15 @@ public class ClientRTP {
 
     // GUI
     // ----
-    JFrame f = new JFrame("Cliente de Testes");
-    JButton setupButton = new JButton("Setup");
-    JButton playButton = new JButton("Play");
-    JButton pauseButton = new JButton("Pause");
-    JButton tearButton = new JButton("Teardown");
-    JPanel mainPanel = new JPanel();
-    JPanel buttonPanel = new JPanel();
-    JLabel iconLabel = new JLabel();
-    ImageIcon icon;
+    // JFrame f = new JFrame("Cliente de Testes");
+    // JButton setupButton = new JButton("Setup");
+    // JButton playButton = new JButton("Play");
+    // JButton pauseButton = new JButton("Pause");
+    // JButton tearButton = new JButton("Teardown");
+    // JPanel mainPanel = new JPanel();
+    // JPanel buttonPanel = new JPanel();
+    // JLabel iconLabel = new JLabel();
+    // ImageIcon icon;
 
     // RTP variables:
     // ----------------
@@ -41,36 +41,36 @@ public class ClientRTP {
         }
 
         // Frame
-        f.addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                System.exit(0);
-            }
-        });
+        // f.addWindowListener(new WindowAdapter() {
+        //     public void windowClosing(WindowEvent e) {
+        //         System.exit(0);
+        //     }
+        // });
 
-        // Buttons
-        buttonPanel.setLayout(new GridLayout(1, 0));
-        buttonPanel.add(setupButton);
-        buttonPanel.add(playButton);
-        buttonPanel.add(pauseButton);
-        buttonPanel.add(tearButton);
+        // // Buttons
+        // buttonPanel.setLayout(new GridLayout(1, 0));
+        // buttonPanel.add(setupButton);
+        // buttonPanel.add(playButton);
+        // buttonPanel.add(pauseButton);
+        // buttonPanel.add(tearButton);
 
-        // handlers... (so dois)
-        playButton.addActionListener(new playButtonListener());
-        tearButton.addActionListener(new tearButtonListener());
+        // // handlers... (so dois)
+        // playButton.addActionListener(new playButtonListener());
+        // tearButton.addActionListener(new tearButtonListener());
 
-        // Image display label
-        iconLabel.setIcon(null);
+        // // Image display label
+        // iconLabel.setIcon(null);
 
-        // frame layout
-        mainPanel.setLayout(null);
-        mainPanel.add(iconLabel);
-        mainPanel.add(buttonPanel);
-        iconLabel.setBounds(0, 0, 380, 280);
-        buttonPanel.setBounds(0, 280, 380, 50);
+        // // frame layout
+        // mainPanel.setLayout(null);
+        // mainPanel.add(iconLabel);
+        // mainPanel.add(buttonPanel);
+        // iconLabel.setBounds(0, 0, 380, 280);
+        // buttonPanel.setBounds(0, 280, 380, 50);
 
-        f.getContentPane().add(mainPanel, BorderLayout.CENTER);
-        f.setSize(new Dimension(390, 370));
-        f.setVisible(true);
+        // f.getContentPane().add(mainPanel, BorderLayout.CENTER);
+        // f.setSize(new Dimension(390, 370));
+        // f.setVisible(true);
 
         // init para a parte do cliente
         // --------------------------
@@ -149,8 +149,8 @@ public class ClientRTP {
                 Image image = toolkit.createImage(payload, 0, payload_length);
 
                 // display the image as an ImageIcon object
-                icon = new ImageIcon(image);
-                iconLabel.setIcon(icon);
+                // icon = new ImageIcon(image);
+                // iconLabel.setIcon(icon);
             } catch (InterruptedIOException iioe) {
                 System.out.println("Nothing to read");
             } catch (IOException ioe) {
