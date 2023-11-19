@@ -86,10 +86,12 @@ public class oNode {
         });
 
 
-        if (RP) {
-            Thread thread7 = new Thread(() -> {
+        Thread thread7 = new Thread(() -> {
                 o.StreamServer();
-            });
+        });
+
+        if (RP) {
+            
             
             Thread thread8 = new Thread(() -> {
                 o.pingServer();
@@ -104,12 +106,11 @@ public class oNode {
             });
             
             
-            thread7.start();
             thread8.start();
             thread9.start();
             thread13.start();
         } else {
-            thread1.start();
+            //thread1.start();
         }
         
         // Inicia as threads
@@ -118,6 +119,7 @@ public class oNode {
         thread4.start();
         thread5.start();
         thread6.start();
+        thread7.start();
         thread10.start();
         thread11.start();
         thread12.start();
