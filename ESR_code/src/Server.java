@@ -32,8 +32,7 @@ class Server  {
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
             //System.out.println();
-            Thread t = null;
-            s.Rois.put(args[i], t);
+            s.Rois.put(args[i], new NullThread());
         }
 
         // Exibe os argumentos armazenados na lista
@@ -162,9 +161,9 @@ class Server  {
                     System.out.println("CAIU");
                     retry = true;
                     for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
-                        if (entry.getValue() != null) {
+                        if (!(entry.getValue() instanceof NullThread)) {
                             entry.getValue().interrupt();
-                            entry.setValue(null);
+                            entry.setValue(new NullThread());
 
                         }
                     }
@@ -230,9 +229,10 @@ class Server  {
                         else{//cancelar de enviar o video
                             for(ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()){
                                 if(entry.getKey().trim().equals(p.getData().trim())){
-                                    entry.getValue().interrupt();
-                                    Thread t = null;
-                                    Rois.put(entry.getKey(), t);
+                                    if(!(entry.getValue() instanceof NullThread)){
+                                        entry.getValue().interrupt();
+                                        Rois.put(entry.getKey(), new NullThread());
+                                    }
                                 }
                             }
                         }
@@ -285,5 +285,10 @@ class Server  {
             e3.printStackTrace();
         }
 
+    }
+
+    // Sentinel class for representing null-like value
+    static class NullThread extends Thread {
+        // You can customize this class based on your requirements
     }
 }
