@@ -73,15 +73,15 @@ class Client {
         
         Thread thread3 = new Thread(() -> {
             try {
-                c.pongRouter();;
+                c.pongRouter();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
         
-        //thread1.start();
-        //thread2.start();
-        //thread3.start();
+        // thread1.start();
+        thread2.start();
+        thread3.start();
         System.out.println("Client: " + c.ip_router.getAddress().toString() + " " + c.ip_router.getNetwork().toString());
 
     }
