@@ -213,10 +213,11 @@ class Server  {
                                             // Create a Main object
                                             
                                             Thread t =  new Thread(() -> {
-                                                new ServerRTP(entry.getKey(),ip_rp.getAddress(),0,"movie");
+                                                new ServerRTP(entry.getKey(),ip_rp.getAddress(),0,entry.getKey());
                                             });
                                             t.start();
                                             Rois.put(entry.getKey(), t);
+                                            
 
                                             // show GUI: (opcional!)
                                             // s.pack();
