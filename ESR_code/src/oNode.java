@@ -192,7 +192,7 @@ public class oNode {
 
                 // envia a "stream" para todos os ips que quiserem a stream
                 for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
-                    if(entry.getKey().equals(str)){
+                    if(entry.getKey().trim().equals(str.trim())){
                         for (InetAddress ip : entry.getValue()) {
 
                             DatagramPacket sendPacket = new DatagramPacket(packet_bits, packet_length, ip, 9000);
