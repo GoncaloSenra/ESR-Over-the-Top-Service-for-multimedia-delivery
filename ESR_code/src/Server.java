@@ -17,7 +17,7 @@ class Server  {
 
     //private String path;// futuramente vai ser o path do video a streamar
 
-    private ConcurrentHashMap<String, Boolean> Rois;// DEBUG:
+    private ConcurrentHashMap<String, Thread> Rois;// DEBUG:
 
     private Boolean retry;
 
@@ -32,7 +32,7 @@ class Server  {
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
             System.out.println();
-            s.Rois.put(args[i], true);//DEBUG: SO PARA TESTAR, SENAO TEM QUE ESTAR A FALSE
+            s.Rois.put(args[i], null);
         }
 
         // Exibe os argumentos armazenados na lista
@@ -57,34 +57,19 @@ class Server  {
             s.checkVideo();
         });
 
-        // thread1.start();
-        // thread2.start();
-        // thread3.start();
-        // thread4.start();
 
-        //TODO: ver como fazer para ligar e deligar a stream de video e como fazer para mais que um video.
-        //talvez um array de threads ou trocar o rois de em vez de boolean o id da thread que ligou o
-        // server de video para depois conseguir parar a thread mais tarde 
-        for(ConcurrentHashMap.Entry<String, Boolean> entry : s.getRois().entrySet()){
-            if(entry.getValue()){
-                System.out.println("A enviar video para o RP " + entry.getKey());
-                File f = new File(entry.getKey());
-                if (f.exists()) {
-                    // Create a Main object
-                    ServerRTP sRtp = new ServerRTP(entry.getKey(),s.ip_rp.getAddress(),0,"movie");
-                    // show GUI: (opcional!)
-                    // s.pack();
-                    // s.setVisible(true);
-                } else
-                    System.out.println("Ficheiro de video não existe: " + entry.getKey());
-            }
-        }
+        thread1.start();
+        thread2.start();
+        // thread3.start();
+        thread4.start();
+
+        
 
     }
 
     public Server(String ip) throws Exception {
 
-        this.Rois = new ConcurrentHashMap<String, Boolean>();
+        this.Rois = new ConcurrentHashMap<String, Thread>();
         this.retry = true;
         this.ip_rp = new IpWithMask(ip);
 
@@ -92,11 +77,11 @@ class Server  {
         System.out.println("-----------------");
     }
 
-    public ConcurrentHashMap<String, Boolean> getRois() {
+    public ConcurrentHashMap<String, Thread> getRois() {
         return Rois;
     }
 
-    public void setRois(String key, Boolean value) {
+    public void setRois(String key, Thread value) {
         Rois.put(key, value);
     }
 
@@ -120,7 +105,7 @@ class Server  {
             retry = false;
             ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
 
-            for (ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()) {
+            for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
                 lista.add(entry.getKey());
             }
             Packet p = new Packet(lista);
@@ -175,8 +160,12 @@ class Server  {
 
                     System.out.println("CAIU");
                     retry = true;
-                    for (ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()) {
-                        entry.setValue(false);
+                    for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
+                        if (entry.getValue() != null) {
+                            entry.getValue().interrupt();
+                            entry.setValue(null);
+
+                        }
                     }
                     System.out.println("Rois me a pika " + Rois.toString());
                 }
@@ -214,11 +203,37 @@ class Server  {
                     if (readObject instanceof Packet) {
                         Packet p = (Packet) readObject;
 
-                        if (p.getAux() == 1)
-                            Rois.put(p.getData(), true);
-                        else
-                            Rois.put(p.getData(), false);
+                        if (p.getAux() == 1){//inicio do video
 
+                            for(ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()){
+                                if(entry.getKey().trim().equals(p.getData().trim())){
+                                        System.out.println("A enviar video para o RP " + entry.getKey());
+                                        File f = new File(entry.getKey());
+                                        if (f.exists()) {
+                                            // Create a Main object
+                                            
+                                            Thread t =  new Thread(() -> {
+                                                new ServerRTP(entry.getKey(),ip_rp.getAddress(),0,"movie");
+                                            });
+                                            t.start();
+                                            Rois.put(entry.getKey(), t);
+
+                                            // show GUI: (opcional!)
+                                            // s.pack();
+                                            // s.setVisible(true);
+                                        } else
+                                            System.out.println("Ficheiro de video não existe: " + entry.getKey());
+                                    }
+                            }
+                        }
+                        else{//cancelar de enviar o video
+                            for(ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()){
+                                if(entry.getKey().trim().equals(p.getData().trim())){
+                                    entry.getValue().interrupt();
+                                    Rois.put(entry.getKey(), null);
+                                }
+                            }
+                        }
                     }
                 } catch (ClassNotFoundException e3) {
                     e3.printStackTrace();
@@ -241,8 +256,8 @@ class Server  {
 
                 Thread.sleep(4000);
 
-                for (ConcurrentHashMap.Entry<String, Boolean> entry : Rois.entrySet()) {
-                    if (entry.getValue()) {
+                for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
+                    if (entry.getValue() != null) {
                         Packet p = new Packet(entry.getKey());
 
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();

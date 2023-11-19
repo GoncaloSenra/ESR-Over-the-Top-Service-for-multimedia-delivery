@@ -170,50 +170,37 @@ public class oNode {
             DatagramSocket serverSocket = new DatagramSocket(9000);
             while (true) {
                 
-                byte[] receiveData = new byte[8192];
-                byte[] sendData = new byte[8192];
+                byte[] receiveData = new byte[15000];
                 
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 serverSocket.receive(receivePacket);
-                
-                byte[] data = receivePacket.getData();
-                
-    
-                ByteArrayInputStream bais = new ByteArrayInputStream(data);
-                ObjectInputStream ois = new ObjectInputStream(bais);
 
-                try {
-                    Object readObject = ois.readObject();
-                    if (readObject instanceof Packet) {
-                        Packet p = (Packet) readObject;
-                        String str = p.getData();
-                        //InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
-                        
-    
-                        System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9000);
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        ObjectOutputStream oos = new ObjectOutputStream(baos);
-                        oos.writeObject(p);
-                        oos.close();
-                        
-                        byte[] datak = baos.toByteArray();
-                        
-                        // envia a "stream" para todos os ips que quiserem a stream
-                        for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
-                            if(entry.getKey().equals(str)){
-                                for (InetAddress ip : entry.getValue()) {
+                // create an RTPpacket object from the DP
+                RTPpacket rtp_packet = new RTPpacket(receivePacket.getData(), receivePacket.getLength());
 
-                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9000);
-                                    serverSocket.send(sendPacket);
-                                    System.out.println("SENT: " + str + " to " + ip.getHostAddress() + ":" + 9000);
+                // print important header fields of the RTP packet received:
+                System.out.println("Got RTP packet with SeqNum # " + rtp_packet.getsequencenumber() + " TimeStamp "
+                        + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
 
-                                }
-                            }
+                String str = rtp_packet.getVideoName();
+                // get to total length of the full rtp packet to send
+                int packet_length = rtp_packet.getlength();
+
+                // retrieve the packet bitstream and store it in an array of bytes
+                byte[] packet_bits = new byte[packet_length];
+                rtp_packet.getpacket(packet_bits);
+
+                // envia a "stream" para todos os ips que quiserem a stream
+                for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
+                    if(entry.getKey().equals(str)){
+                        for (InetAddress ip : entry.getValue()) {
+
+                            DatagramPacket sendPacket = new DatagramPacket(packet_bits, packet_length, ip, 9000);
+                            serverSocket.send(sendPacket);
+                            System.out.println("SENT: " + str + " to " + ip.getHostAddress() + ":" + 9000);
+
                         }
-                        
                     }
-                } catch (ClassNotFoundException e3) {
-                    e3.printStackTrace();
                 }
        
             }
@@ -1249,7 +1236,7 @@ public class oNode {
         
     }
 
-    // public InetAddress bestPathPikeno(String videoName){ //vai procurar o melhor caminho para o destino
+    public InetAddress bestPathPikeno(String videoName){ //vai procurar o melhor caminho para o destino
     //     //1 envia pacote search(6000)
     //     //2 espera pelos pacotes a receber(6001)
     //     //3 escolhe o melhor caminho
@@ -1352,7 +1339,8 @@ public class oNode {
     //         e2.printStackTrace();
     //     }
     //     return addr;
-    // }
+        return null;
+    }
 
 
     private void pong(){

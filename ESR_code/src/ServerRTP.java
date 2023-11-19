@@ -4,7 +4,7 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class ServerRTP extends JFrame implements ActionListener {
+public class ServerRTP extends JFrame implements ActionListener{
 
     // GUI:
     // ----------------
@@ -33,7 +33,7 @@ public class ServerRTP extends JFrame implements ActionListener {
     // --------------------------
     // Constructor
     // --------------------------
-    public ServerRTP(String VideoFileName , InetAddress ip_rp,int image_nb, String name) {
+    public ServerRTP(String VideoFileName , InetAddress ip_rp,int image_nb, String name){
         // init Frame
         super("Servidor");
 
