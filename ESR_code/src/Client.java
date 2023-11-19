@@ -38,9 +38,6 @@ class Client {
         videoName = args[1];
         //System.out.println("Router IP: " + routerIP);
         Client c = new Client();
-        BufferedReader inFromUser = new BufferedReader(new InputStreamReader(System.in));
-        
-        System.out.println();
 
         Thread thread1 = new Thread(() -> {
             try {
@@ -90,6 +87,7 @@ class Client {
         //thread1.start();
         //thread2.start();
         //thread3.start();
+        System.out.println("Client: " + c.ip_router.getAddress().toString() + " " + c.ip_router.getNetwork().toString());
 
     }
 
@@ -112,6 +110,7 @@ class Client {
         // } catch (SocketException e) {
         //     System.out.println("Cliente: erro no socket: " + e.getMessage());
         // }
+        cTimer.start();
         
     }
 
@@ -194,7 +193,7 @@ class Client {
             //enviar o pacote para o melhor caminho
             DatagramSocket sendSocket = new DatagramSocket();
 
-            InetAddress dest2 = bestPacket.getPathInv().getLast();
+            InetAddress dest2 = bestPacket.getPathInv().get(bestPacket.getPathInv().size() - 1);
             bestPacket.setHops(1);
             bestPacket.setData(videoName);
 
@@ -244,13 +243,14 @@ class Client {
 
     class clientTimerListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
-
+            System.out.println("ca estamos a espera do pacote RTP");
             // Construct a DatagramPacket to receive data from the UDP socket
             rcvdp = new DatagramPacket(cBuf, cBuf.length);
 
             try {
                 // receive the DP from the socket:
                 RTPsocket.receive(rcvdp);
+                System.out.println("recebemos o pacote RTP");
 
                 // create an RTPpacket object from the DP
                 RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());

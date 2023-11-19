@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 public class RTPpacket {
 
     // size of the RTP header:
-    static int HEADER_SIZE = 24; //para caber o nome do video, talvez seja preciso aumentar ou diminuir
+    static int HEADER_SIZE = 48; //para caber o nome do video, talvez seja preciso aumentar ou diminuir
 
     // Fields that compose the RTP header
     public int Version;
@@ -17,6 +17,7 @@ public class RTPpacket {
     public int SequenceNumber;
     public int TimeStamp;
     public int Ssrc;
+    public int videoNameLength;
     public String VideoName; // novo campo para armazenar o nome do vídeo
 
     // Bitstream of the RTP header
@@ -47,8 +48,14 @@ public class RTPpacket {
 
         // build the header bistream:
         // --------------------------
-        header = new byte[HEADER_SIZE];
 
+        //convert to byte array 
+        byte[] videoNameBytes = VideoName.getBytes(StandardCharsets.UTF_8);
+
+        this.videoNameLength = videoNameBytes.length;
+        
+        header = new byte[HEADER_SIZE];
+        
         // .............
         // TO COMPLETE
         // .............
@@ -65,12 +72,13 @@ public class RTPpacket {
         header[9] = (byte) (Ssrc >> 16);
         header[10] = (byte) (Ssrc >> 8);
         header[11] = (byte) (Ssrc & 0xFF);
+        
+        header[12] = (byte) (videoNameLength >> 8);
+        header[13] = (byte) (videoNameLength & 0xFF);
 
-        //convert to byte array 
-        byte[] videoNameBytes = VideoName.getBytes(StandardCharsets.UTF_8);
+        System.arraycopy(videoNameBytes, 0, header, 14, videoNameBytes.length);
         
-        System.arraycopy(videoNameBytes, 0, header, 12, videoNameBytes.length);
-        
+        System.out.println("header: " + header.length + " videoNameBytes: " + videoNameBytes.length);
         // fill the payload bitstream:
         // --------------------------
         payload_size = data_length;
@@ -115,10 +123,15 @@ public class RTPpacket {
             SequenceNumber = unsigned_int(header[3]) + 256 * unsigned_int(header[2]);
             TimeStamp = unsigned_int(header[7]) + 256 * unsigned_int(header[6]) + 65536 * unsigned_int(header[5])
                     + 16777216 * unsigned_int(header[4]);
+            
 
+            videoNameLength = unsigned_int(header[13]) + 256 * unsigned_int(header[12]);
+
+            System.out.println("bytesName-> " + videoNameLength);
             // obter o nome do vídeo do header
-            byte[] videoNameBytes = new byte[packet_size - HEADER_SIZE];
-            System.arraycopy(packet, HEADER_SIZE, videoNameBytes, 0, videoNameBytes.length);
+            byte[] videoNameBytes = new byte[videoNameLength];
+            System.out.println("packet_size: " + packet_size + " HEADER_SIZE: " + header.length + " videoNameBytes: " + videoNameBytes.length);
+            System.arraycopy(packet, 14 , videoNameBytes, 0, videoNameLength);
             VideoName = new String(videoNameBytes, StandardCharsets.UTF_8);
         }
     }

@@ -829,7 +829,7 @@ public class oNode {
                         if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
                             System.out.println("Contem a stream");
                             p.setHops(1);
-                            InetAddress dest = p.getPath().getLast();
+                            InetAddress dest = p.getPath().get(p.getPath().size() - 1);
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
                             ObjectOutputStream oos = new ObjectOutputStream(baos);
                             oos.writeObject(p);
