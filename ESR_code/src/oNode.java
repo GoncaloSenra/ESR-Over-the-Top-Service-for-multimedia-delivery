@@ -192,6 +192,7 @@ public class oNode {
 
                 // envia a "stream" para todos os ips que quiserem a stream
                 for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
+                    System.out.println("entry: " +"|"+ entry.getKey()+ "|" + "entry" + "|" + str + "|");
                     if(entry.getKey().trim().equals(str.trim())){
                         for (InetAddress ip : entry.getValue()) {
 
