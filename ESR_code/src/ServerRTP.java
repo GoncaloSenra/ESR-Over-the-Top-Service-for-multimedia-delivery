@@ -4,11 +4,11 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class ServerRTP extends JFrame implements ActionListener{
+public class ServerRTP implements ActionListener{
 
     // GUI:
     // ----------------
-    JLabel label;
+    // JLabel label;
 
     // RTP variables:
     // ----------------
@@ -59,17 +59,17 @@ public class ServerRTP extends JFrame implements ActionListener{
         }
 
         // Handler to close the main window
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                // stop the timer and exit
-                sTimer.stop();
-                System.exit(0);
-            }
-        });
+        // addWindowListener(new WindowAdapter() {
+        //     public void windowClosing(WindowEvent e) {
+        //         // stop the timer and exit
+        //         sTimer.stop();
+        //         System.exit(0);
+        //     }
+        // });
 
         // GUI:
-        label = new JLabel("Send frame #        ", JLabel.CENTER);
-        getContentPane().add(label, BorderLayout.CENTER);
+        // label = new JLabel("Send frame #        ", JLabel.CENTER);
+        // getContentPane().add(label, BorderLayout.CENTER);
 
         sTimer.start();
     }
@@ -114,7 +114,7 @@ public class ServerRTP extends JFrame implements ActionListener{
                 rtp_packet.printheader();
 
                 // update GUI
-                label.setText("Send frame #" + imagenb);
+                // label.setText("Send frame #" + imagenb);
             } catch (Exception ex) {
                 System.out.println("Exception caught: " + ex);
                 System.exit(0);
@@ -135,7 +135,7 @@ public class ServerRTP extends JFrame implements ActionListener{
             sBuf = new byte[15000];
 
             try {
-                video = new VideoStream("entry.getKey()"); // init the VideoStream object:
+                video = new VideoStream(name); // init the VideoStream object:
 
             } catch (Exception exc) {
                 System.out.println("Erro video");
