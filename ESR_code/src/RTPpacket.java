@@ -5,7 +5,7 @@ import java.nio.charset.StandardCharsets;
 public class RTPpacket {
 
     // size of the RTP header:
-    static int HEADER_SIZE = 12;
+    static int HEADER_SIZE = 24; //para caber o nome do video, talvez seja preciso aumentar ou diminuir
 
     // Fields that compose the RTP header
     public int Version;
@@ -30,7 +30,7 @@ public class RTPpacket {
     // --------------------------
     // Constructor of an RTPpacket object from header fields and payload bitstream
     // --------------------------
-    public RTPpacket(int PType, int Framenb, int Time, byte[] data, int data_length,  String videoName) {
+    public RTPpacket(int PType, int Framenb, int Time, byte[] data, int data_length,  String videoname) {
         // fill by default header fields:
         Version = 2;
         Padding = 0;
@@ -38,6 +38,7 @@ public class RTPpacket {
         CC = 0;
         Marker = 0;
         Ssrc = 0;
+        VideoName = videoname;
 
         // fill changing header fields:
         SequenceNumber = Framenb;
@@ -66,7 +67,7 @@ public class RTPpacket {
         header[11] = (byte) (Ssrc & 0xFF);
 
         //convert to byte array 
-        byte[] videoNameBytes = videoName.getBytes(StandardCharsets.UTF_8);
+        byte[] videoNameBytes = VideoName.getBytes(StandardCharsets.UTF_8);
         
         System.arraycopy(videoNameBytes, 0, header, 12, videoNameBytes.length);
         
