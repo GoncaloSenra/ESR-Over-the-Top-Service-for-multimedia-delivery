@@ -1,13 +1,5 @@
-/* ------------------
-   Cliente
-   usage: java Cliente
-   adaptado dos originais pela equipa docente de ESR (nenhumas garantias)
-   colocar o cliente primeiro a correr que o servidor dispara logo!
-   ---------------------- */
-
 import java.io.*;
 import java.net.*;
-import java.util.*;
 import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
@@ -31,7 +23,6 @@ public class ClientRTP {
     // ----------------
     DatagramPacket rcvdp; // UDP packet received from the server (to receive)
     DatagramSocket RTPsocket; // socket to be used to send and receive UDP packet
-    static int RTP_RCV_PORT = 9000; // port where the client will receive the RTP packets
 
     Timer cTimer; // timer used to receive data from the UDP socket
     byte[] cBuf; // buffer used to store data received from the server
@@ -41,8 +32,13 @@ public class ClientRTP {
     // --------------------------
     public ClientRTP() {
 
-        // build GUI
-        // --------------------------
+        try {
+            // socket e video
+            this.RTPsocket = new DatagramSocket(9000); // init RTP socket (o mesmo para o cliente e servidor)
+            System.out.println("Cliente: vai receber video");
+        } catch (SocketException e) {
+            System.out.println("Cliente: erro no socket: " + e.getMessage());
+        }
 
         // Frame
         f.addWindowListener(new WindowAdapter() {
@@ -83,20 +79,11 @@ public class ClientRTP {
         cTimer.setCoalesce(true);
         cBuf = new byte[15000]; // allocate enough memory for the buffer used to receive data from the server
 
-        try {
-            // socket e video
-            RTPsocket = new DatagramSocket(RTP_RCV_PORT); // init RTP socket (o mesmo para o cliente e servidor)
-            RTPsocket.setSoTimeout(5000); // setimeout to 5s
-        } catch (SocketException e) {
-            System.out.println("Cliente: erro no socket: " + e.getMessage());
-        }
-    }
+        System.out.println("Play Button pressed !");
+        // start the timers ...
+        cTimer.start();
 
-    // ------------------------------------
-    // main
-    // ------------------------------------
-    public static void main(String argv[]) throws Exception {
-        ClientRTP t = new ClientRTP();
+        
     }
 
     // ------------------------------------
@@ -172,4 +159,4 @@ public class ClientRTP {
         }
     }
 
-}// end of Class Cliente
+}

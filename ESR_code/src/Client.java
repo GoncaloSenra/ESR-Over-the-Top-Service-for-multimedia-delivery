@@ -1,14 +1,7 @@
 import java.io.*;
 import java.net.*;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
-import java.io.*;
-import java.net.*;
-import java.util.*;
-import java.awt.*;
-import java.awt.event.*;
-import javax.swing.*;
 import javax.swing.Timer;
 
 
@@ -21,7 +14,7 @@ class Client {
 
     private IpWithMask ip_router;
 
-    private DatagramSocket clientSocket; //9000
+    // private DatagramSocket clientSocket; //9000
 
     // RTP variables:
     // ----------------
@@ -39,34 +32,36 @@ class Client {
         //System.out.println("Router IP: " + routerIP);
         Client c = new Client();
 
-        Thread thread1 = new Thread(() -> {
-            try {
-                System.out.println("Thread 1");
-                while (true) {
-                    byte[] receiveData = new byte[8192];
-                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                    c.clientSocket.receive(receivePacket);
+        // Thread thread1 = new Thread(() -> {
+        //     try {
+        //         System.out.println("Thread 1");
+        //         while (true) {
+        //             byte[] receiveData = new byte[8192];
+        //             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+        //             c.clientSocket.receive(receivePacket);
 
-                    byte[] data = receivePacket.getData();
+        //             byte[] data = receivePacket.getData();
                     
-                    ByteArrayInputStream bais = new ByteArrayInputStream(data);
-                    ObjectInputStream ois = new ObjectInputStream(bais);
+        //             ByteArrayInputStream bais = new ByteArrayInputStream(data);
+        //             ObjectInputStream ois = new ObjectInputStream(bais);
 
-                    Object readObject = ois.readObject();
-                    if (readObject instanceof Packet) {
-                        Packet pdi = (Packet) readObject;
-                        String str = pdi.getData();
+        //             Object readObject = ois.readObject();
+        //             if (readObject instanceof Packet) {
+        //                 Packet pdi = (Packet) readObject;
+        //                 String str = pdi.getData();
 
-                        System.out.println(str);
+        //                 System.out.println(str);
                         
-                        System.out.println("=====================");
-                    }
+        //                 System.out.println("=====================");
+        //             }
                     
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
+        //         }
+        //     } catch (Exception e) {
+        //         e.printStackTrace();
+        //     }
+        // });
+
+        ClientRTP t = new ClientRTP();
 
         Thread thread2 = new Thread(() -> {
             try {
@@ -95,22 +90,7 @@ class Client {
         
         this.ip_router = new IpWithMask(routerIP);
 
-        this.clientSocket = new DatagramSocket(9000); 
-
-        // init para a parte do cliente
-        // --------------------------
-        cTimer = new Timer(20, new clientTimerListener());
-        cTimer.setInitialDelay(0);
-        cTimer.setCoalesce(true);
-        cBuf = new byte[15000]; // allocate enough memory for the buffer used to receive data from the server
-
-        // try {
-        //     // socket e video
-        //     clientSocket.setSoTimeout(5000); // setimeout to 5s
-        // } catch (SocketException e) {
-        //     System.out.println("Cliente: erro no socket: " + e.getMessage());
-        // }
-        cTimer.start();
+        // this.clientSocket = new DatagramSocket(9000); 
         
     }
 
@@ -241,45 +221,5 @@ class Client {
 
     }
 
-    class clientTimerListener implements ActionListener {
-        public void actionPerformed(ActionEvent e) {
-            System.out.println("ca estamos a espera do pacote RTP");
-            // Construct a DatagramPacket to receive data from the UDP socket
-            rcvdp = new DatagramPacket(cBuf, cBuf.length);
-
-            try {
-                // receive the DP from the socket:
-                RTPsocket.receive(rcvdp);
-                System.out.println("recebemos o pacote RTP");
-
-                // create an RTPpacket object from the DP
-                RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
-
-                // print important header fields of the RTP packet received:
-                System.out.println("Got RTP packet with SeqNum # " + rtp_packet.getsequencenumber() + " TimeStamp "
-                        + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
-
-                // print header bitstream:
-                rtp_packet.printheader();
-
-                // get the payload bitstream from the RTPpacket object
-                int payload_length = rtp_packet.getpayload_length();
-                byte[] payload = new byte[payload_length];
-                rtp_packet.getpayload(payload);
-
-                // get an Image object from the payload bitstream
-                Toolkit toolkit = Toolkit.getDefaultToolkit();
-                Image image = toolkit.createImage(payload, 0, payload_length);
-
-                // display the image as an ImageIcon object
-                //icon = new ImageIcon(image);
-                //iconLabel.setIcon(icon);
-            } catch (InterruptedIOException iioe) {
-                System.out.println("Nothing to read");
-            } catch (IOException ioe) {
-                System.out.println("Exception caught: " + ioe);
-            }
-        }
-    }
 
 }
