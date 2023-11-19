@@ -31,8 +31,9 @@ class Server  {
 
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
-            System.out.println();
-            s.Rois.put(args[i], null);
+            //System.out.println();
+            Thread t = null;
+            s.Rois.put(args[i], t);
         }
 
         // Exibe os argumentos armazenados na lista
@@ -69,7 +70,7 @@ class Server  {
 
     public Server(String ip) throws Exception {
 
-        this.Rois = new ConcurrentHashMap<String, Thread>();
+        this.Rois = new ConcurrentHashMap<>();
         this.retry = true;
         this.ip_rp = new IpWithMask(ip);
 
@@ -230,7 +231,8 @@ class Server  {
                             for(ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()){
                                 if(entry.getKey().trim().equals(p.getData().trim())){
                                     entry.getValue().interrupt();
-                                    Rois.put(entry.getKey(), null);
+                                    Thread t = null;
+                                    Rois.put(entry.getKey(), t);
                                 }
                             }
                         }
