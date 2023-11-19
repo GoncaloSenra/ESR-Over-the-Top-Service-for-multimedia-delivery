@@ -4,11 +4,11 @@ import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
-public class ServerRTP extends JFrame implements ActionListener{
+public class ServerRTP implements ActionListener{
 
     // GUI:
     // ----------------
-    JLabel label;
+    // JLabel label;
 
     // RTP variables:
     // ----------------
@@ -35,7 +35,7 @@ public class ServerRTP extends JFrame implements ActionListener{
     // --------------------------
     public ServerRTP(String VideoFileName , InetAddress ip_rp,int image_nb, String name){
         // init Frame
-        super("Servidor");
+        // super("Servidor");
 
         this.ip_rp = ip_rp;
         this.imagenb = image_nb;
@@ -59,17 +59,17 @@ public class ServerRTP extends JFrame implements ActionListener{
         }
 
         // Handler to close the main window
-        addWindowListener(new WindowAdapter() {
-            public void windowClosing(WindowEvent e) {
-                // stop the timer and exit
-                sTimer.stop();
-                System.exit(0);
-            }
-        });
+        // addWindowListener(new WindowAdapter() {
+        //     public void windowClosing(WindowEvent e) {
+        //         // stop the timer and exit
+        //         sTimer.stop();
+        //         System.exit(0);
+        //     }
+        // });
 
         // GUI:
-        label = new JLabel("Send frame #        ", JLabel.CENTER);
-        getContentPane().add(label, BorderLayout.CENTER);
+        // label = new JLabel("Send frame #        ", JLabel.CENTER);
+        // getContentPane().add(label, BorderLayout.CENTER);
 
         sTimer.start();
     }
