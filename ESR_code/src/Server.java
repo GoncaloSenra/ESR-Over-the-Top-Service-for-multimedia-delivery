@@ -17,7 +17,7 @@ class Server  {
 
     //private String path;// futuramente vai ser o path do video a streamar
 
-    private ConcurrentHashMap<String, Thread> Rois;// DEBUG:
+    private ConcurrentHashMap<String, ServerRTP> Rois;// DEBUG:
 
     private Boolean retry;
 
@@ -32,7 +32,7 @@ class Server  {
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
             //System.out.println();
-            s.Rois.put(args[i], new NullThread());
+            s.Rois.put(args[i], null);
         }
 
         // Exibe os argumentos armazenados na lista
@@ -50,21 +50,14 @@ class Server  {
         });
 
         Thread thread3 = new Thread(() -> {
-            s.sendVideo();
-        });
-
-        Thread thread4 = new Thread(() -> {
             s.checkVideo();
         });
 
 
         thread1.start();
         thread2.start();
-        // thread3.start();
-        thread4.start();
-
-        
-
+        thread3.start();
+    
     }
 
     public Server(String ip) throws Exception {
@@ -77,11 +70,11 @@ class Server  {
         System.out.println("-----------------");
     }
 
-    public ConcurrentHashMap<String, Thread> getRois() {
+    public ConcurrentHashMap<String, ServerRTP> getRois() {
         return Rois;
     }
 
-    public void setRois(String key, Thread value) {
+    public void setRois(String key, ServerRTP value) {
         Rois.put(key, value);
     }
 
@@ -105,7 +98,7 @@ class Server  {
             retry = false;
             ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
 
-            for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
+            for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
                 lista.add(entry.getKey());
             }
             Packet p = new Packet(lista);
@@ -160,11 +153,11 @@ class Server  {
 
                     System.out.println("CAIU");
                     retry = true;
-                    for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
-                        if (!(entry.getValue() instanceof NullThread)) {
+                    for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
+                        if (!(entry.getValue() == null)) {
                             System.err.println("A parar o video " + entry.getKey());
-                            entry.getValue().interrupt();
-                            entry.setValue(new NullThread());
+                            entry.getValue().stopThread();
+                            entry.setValue(null);
 
                         }
                     }
@@ -206,34 +199,27 @@ class Server  {
 
                         if (p.getAux() == 1){//inicio do video
 
-                            for(ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()){
+                            for(ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()){
                                 if(entry.getKey().trim().equals(p.getData().trim())){
                                         System.out.println("A enviar video para o RP " + entry.getKey());
                                         File f = new File(entry.getKey());
                                         if (f.exists()) {
-                                            // Create a Main object
                                             
-                                            Thread t =  new Thread(() -> {
-                                                new ServerRTP(entry.getKey(),ip_rp.getAddress(),0,entry.getKey());
-                                            });
-                                            t.start();
-                                            Rois.put(entry.getKey(), t);
-                                            
+                                            Rois.put(entry.getKey(), new ServerRTP(entry.getKey(), ip_rp.getAddress(), 0, entry.getKey()));//TODO: image_nb tem que vir no pacote do RP
 
-                                            // show GUI: (opcional!)
-                                            // s.pack();
-                                            // s.setVisible(true);
                                         } else
                                             System.out.println("Ficheiro de video não existe: " + entry.getKey());
                                     }
                             }
                         }
                         else{//cancelar de enviar o video
-                            for(ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()){
+                            for(ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()){
                                 if(entry.getKey().trim().equals(p.getData().trim())){
-                                    if(!(entry.getValue() instanceof NullThread)){
-                                        entry.getValue().stop();
-                                        Rois.put(entry.getKey(), new NullThread());
+                                    if(!(entry.getValue() == null)){
+                                        System.out.println("A parar o video " + entry.getKey());
+
+                                        entry.getValue().stopThread();
+                                        Rois.put(entry.getKey(), null);
                                     }
                                 }
                             }
@@ -251,46 +237,4 @@ class Server  {
         }
     }
 
-    public void sendVideo() {
-
-        try {
-            DatagramSocket videoSocket = new DatagramSocket();
-
-            while (true) {
-
-                Thread.sleep(4000);
-
-                for (ConcurrentHashMap.Entry<String, Thread> entry : Rois.entrySet()) {
-                    if (entry.getValue() != null) {
-                        Packet p = new Packet(entry.getKey());
-
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        ObjectOutputStream oos = new ObjectOutputStream(baos);
-                        oos.writeObject(p);
-                        oos.close();
-
-                        byte[] data = baos.toByteArray();
-
-                        DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 9000);
-                        videoSocket.send(sendPacket);
-
-                        System.out.println("SENT: " + entry.getKey() + " to RP: " + ip_rp.getAddress() + ":" + 9000);
-                    }
-                }
-            }
-
-        } catch (SocketException e1) {
-            e1.printStackTrace();
-        } catch (IOException e2) {
-            e2.printStackTrace();
-        } catch (InterruptedException e3) {
-            e3.printStackTrace();
-        }
-
-    }
-
-    // Sentinel class for representing null-like value
-    static class NullThread extends Thread {
-        // You can customize this class based on your requirements
-    }
 }

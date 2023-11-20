@@ -29,7 +29,7 @@ public class ServerRTP implements ActionListener{
     //
     private InetAddress ip_rp ;
     private String name;
-
+    private boolean isRunning;
     // --------------------------
     // Constructor
     // --------------------------
@@ -40,6 +40,7 @@ public class ServerRTP implements ActionListener{
         this.ip_rp = ip_rp;
         this.imagenb = image_nb;
         this.name = name;
+        this.isRunning = true;
         
         // init para a parte do servidor
         sTimer = new Timer(FRAME_PERIOD, this); // init Timer para servidor
@@ -82,6 +83,9 @@ public class ServerRTP implements ActionListener{
         // if the current image nb is less than the length of the video
 
         System.out.println("A enviar video para o RP " + imagenb);
+        if(isRunning){
+
+        
         if (imagenb < VIDEO_LENGTH) {
             // update current imagenb
             imagenb++;
@@ -140,6 +144,21 @@ public class ServerRTP implements ActionListener{
             } catch (Exception exc) {
                 System.out.println("Erro video");
             }
+        }
+        }else{
+            System.out.println("Servidor: parou de enviar video");
+        }
+    }
+    public void stopThread() {
+        try {
+            isRunning = false;
+            sTimer.stop(); // Pare o timer se ainda estiver em execução
+            RTPsocket.close(); // Feche o socket para liberar recursos
+            System.exit(0);
+            
+        } catch (Exception e) {
+            System.err.println("Erro ao parar o thread: " + e.getMessage());
+            System.exit(1);
         }
     }
 }
