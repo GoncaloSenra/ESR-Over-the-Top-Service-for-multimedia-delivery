@@ -1,6 +1,5 @@
 
 import java.net.*;
-import java.awt.*;
 import java.awt.event.*;
 import javax.swing.*;
 
@@ -33,14 +32,14 @@ public class ServerRTP implements ActionListener{
     // --------------------------
     // Constructor
     // --------------------------
-    public ServerRTP(String VideoFileName , InetAddress ip_rp,int image_nb, String name){
+    public ServerRTP(String VideoFileName , InetAddress ip_rp,int image_nb, String name,Boolean Running){
         // init Frame
         // super("Servidor");
 
         this.ip_rp = ip_rp;
         this.imagenb = image_nb;
         this.name = name;
-        this.isRunning = true;
+        this.isRunning = Running;
         
         // init para a parte do servidor
         sTimer = new Timer(FRAME_PERIOD, this); // init Timer para servidor
@@ -59,19 +58,6 @@ public class ServerRTP implements ActionListener{
             System.out.println("Servidor: erro no video: " + e.getMessage());
         }
 
-        // Handler to close the main window
-        // addWindowListener(new WindowAdapter() {
-        //     public void windowClosing(WindowEvent e) {
-        //         // stop the timer and exit
-        //         sTimer.stop();
-        //         System.exit(0);
-        //     }
-        // });
-
-        // GUI:
-        // label = new JLabel("Send frame #        ", JLabel.CENTER);
-        // getContentPane().add(label, BorderLayout.CENTER);
-
         sTimer.start();
     }
     
@@ -86,78 +72,94 @@ public class ServerRTP implements ActionListener{
         if(isRunning){
 
         
-        if (imagenb < VIDEO_LENGTH) {
-            // update current imagenb
-            imagenb++;
-            System.out.println("A enviar frame " + imagenb);
-            try {
-                // get next frame to send from the video, as well as its size
-                int image_length = video.getnextframe(sBuf);
-                System.out.println("A enviar frame " + imagenb + " com tamanho " + image_length);
-                // Builds an RTPpacket object containing the frame
-                // RTPpacket rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb * FRAME_PERIOD, sBuf,
-                //         image_length, entry.getKey());
-                RTPpacket rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb * FRAME_PERIOD, sBuf,
-                        image_length,name);
+            if (imagenb < VIDEO_LENGTH) {
+                // update current imagenb
+                imagenb++;
+                System.out.println("A enviar frame " + imagenb);
+                try {
+                    // get next frame to send from the video, as well as its size
+                    int image_length = video.getnextframe(sBuf);
+                    System.out.println("A enviar frame " + imagenb + " com tamanho " + image_length);
+                    // Builds an RTPpacket object containing the frame
+                    // RTPpacket rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb * FRAME_PERIOD, sBuf,
+                    //         image_length, entry.getKey());
+                    RTPpacket rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb * FRAME_PERIOD, sBuf,
+                            image_length,name);
 
-                System.out.println(rtp_packet.toString());
+                    System.out.println(rtp_packet.toString());
 
-                // get to total length of the full rtp packet to send
-                int packet_length = rtp_packet.getlength();
+                    // get to total length of the full rtp packet to send
+                    int packet_length = rtp_packet.getlength();
 
-                // retrieve the packet bitstream and store it in an array of bytes
-                byte[] packet_bits = new byte[packet_length];
-                rtp_packet.getpacket(packet_bits);
+                    // retrieve the packet bitstream and store it in an array of bytes
+                    byte[] packet_bits = new byte[packet_length];
+                    rtp_packet.getpacket(packet_bits);
 
-                // send the packet as a DatagramPacket over the UDP socket
-                senddp = new DatagramPacket(packet_bits, packet_length,ip_rp , 9000);
-                RTPsocket.send(senddp);
+                    // send the packet as a DatagramPacket over the UDP socket
+                    senddp = new DatagramPacket(packet_bits, packet_length,ip_rp , 9000);
+                    RTPsocket.send(senddp);
 
-                System.out.println("Send frame #" + imagenb);
-                // print the header bitstream
-                rtp_packet.printheader();
+                    System.out.println("Send frame #" + imagenb);
+                    // print the header bitstream
+                    rtp_packet.printheader();
 
-                // update GUI
-                // label.setText("Send frame #" + imagenb);
-            } catch (Exception ex) {
-                System.out.println("Exception caught: " + ex);
-                System.exit(0);
+                    // update GUI
+                    // label.setText("Send frame #" + imagenb);
+                } catch (Exception ex) {
+                    System.out.println("Exception caught: " + ex);
+                    System.exit(0);
+                }
+            } else {
+                System.out.println("Final da stream");
+                // ATENÇAO AO COPYRIGHT
+
+                imagenb = 0; // image nb of the image currently transmitted
+                MJPEG_TYPE = 26; // RTP payload type for MJPEG video
+                FRAME_PERIOD = 100; // Frame period of the video to stream, in ms
+                VIDEO_LENGTH = 500; // length of the video in frames
+
+                // if we have reached the end of the video file, stop the timer
+                System.out.println("Final da stream");
+                sTimer.setInitialDelay(0);
+                sTimer.setCoalesce(true);
+                sBuf = new byte[15000];
+
+                try {
+                    video = new VideoStream(name); // init the VideoStream object:
+
+                } catch (Exception exc) {
+                    System.out.println("Erro video");
+                }
             }
-        } else {
-            System.out.println("Final da stream");
-            // ATENÇAO AO COPYRIGHT
-
-            imagenb = 0; // image nb of the image currently transmitted
-            MJPEG_TYPE = 26; // RTP payload type for MJPEG video
-            FRAME_PERIOD = 100; // Frame period of the video to stream, in ms
-            VIDEO_LENGTH = 500; // length of the video in frames
-
-            // if we have reached the end of the video file, stop the timer
-            System.out.println("Final da stream");
-            sTimer.setInitialDelay(0);
-            sTimer.setCoalesce(true);
-            sBuf = new byte[15000];
-
-            try {
-                video = new VideoStream(name); // init the VideoStream object:
-
-            } catch (Exception exc) {
-                System.out.println("Erro video");
-            }
-        }
         }else{
-            System.out.println("Servidor: parou de enviar video");
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e1) {
+                // TODO Auto-generated catch block
+                e1.printStackTrace();
+            }
+            System.out.println("Servidor_"+ name + ": parou de enviar video");
         }
     }
     public void stopThread() {
         try {
-            isRunning = false;
+            this.isRunning = false;
             sTimer.stop(); // Pare o timer se ainda estiver em execução
-            RTPsocket.close(); // Feche o socket para liberar recursos
-            System.exit(0);
             
         } catch (Exception e) {
             System.err.println("Erro ao parar o thread: " + e.getMessage());
+            System.exit(1);
+        }
+    }
+
+    public void startThread(int image_nb) {
+        try {
+            this.isRunning = true;
+            this.imagenb = image_nb;
+            sTimer.start(); // Iniciar o timer
+            
+        } catch (Exception e) {
+            System.err.println("Erro ao iniciar a thread: " + e.getMessage());
             System.exit(1);
         }
     }

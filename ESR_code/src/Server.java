@@ -32,7 +32,7 @@ class Server  {
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
             //System.out.println();
-            s.Rois.put(args[i], null);
+            s.Rois.put(args[i], new ServerRTP(args[i], s.ip_rp.getAddress(), 0, args[i],false));//TODO: image_nb tem que vir no pacote do RP, NAME TEM QUE SER ALTERADO TAMBE
         }
 
         // Exibe os argumentos armazenados na lista
@@ -201,15 +201,15 @@ class Server  {
 
                             for(ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()){
                                 if(entry.getKey().trim().equals(p.getData().trim())){
-                                        System.out.println("A enviar video para o RP " + entry.getKey());
-                                        File f = new File(entry.getKey());
-                                        if (f.exists()) {
-                                            
-                                            Rois.put(entry.getKey(), new ServerRTP(entry.getKey(), ip_rp.getAddress(), 0, entry.getKey()));//TODO: image_nb tem que vir no pacote do RP
+                                    System.out.println("A enviar video para o RP " + entry.getKey());
+                                    File f = new File(entry.getKey());
+                                    if (f.exists()) {
+                                        entry.getValue().startThread(0);//TODO: image_nb tem que vir no pacote do RP,OU CANCELAR PRIMEIRO O OUTRO E DEVOLVER O IMAGE_NB
+                                        //Rois.put(entry.getKey(), new ServerRTP(entry.getKey(), ip_rp.getAddress(), 0, entry.getKey(),false));//TODO: image_nb tem que vir no pacote do RP
 
-                                        } else
-                                            System.out.println("Ficheiro de video não existe: " + entry.getKey());
-                                    }
+                                    } else
+                                        System.out.println("Ficheiro de video não existe: " + entry.getKey());
+                                }
                             }
                         }
                         else{//cancelar de enviar o video
@@ -219,7 +219,7 @@ class Server  {
                                         System.out.println("A parar o video " + entry.getKey());
 
                                         entry.getValue().stopThread();
-                                        Rois.put(entry.getKey(), null);
+                                        //Rois.put(entry.getKey(), null);
                                     }
                                 }
                             }
