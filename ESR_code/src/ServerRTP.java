@@ -77,9 +77,9 @@ public class ServerRTP implements ActionListener{
                 imagenb++;
                 System.out.println("A enviar frame " + imagenb + " - " + VIDEO_LENGTH);
                 try {
-                    // get next frame to send from the video, as well as its size
-                    while(true)
-                    int image_length = video.getnextframe(sBuf);
+                    // get next frame to send from the video, as well as its sizeum
+                    int image_length = video.getnextframe(sBuf);;
+                    
                     System.out.println("A enviar frame " + imagenb + " com tamanho " + image_length);
                     // Builds an RTPpacket object containing the frame
                     // RTPpacket rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb * FRAME_PERIOD, sBuf,
@@ -158,6 +158,7 @@ public class ServerRTP implements ActionListener{
         try {
             this.isRunning = true;
             this.imagenb = image_nb;
+            video.setFrameNb(image_nb);
             sTimer.setInitialDelay(0);
             sTimer.setCoalesce(true);
             sTimer.start(); // Iniciar o timer

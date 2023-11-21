@@ -6,6 +6,7 @@ public class VideoStream {
 
     FileInputStream fis; // video file
     int frame_nb; // current frame nb
+    String filename;
 
     // -----------------------------------
     // constructor
@@ -13,8 +14,14 @@ public class VideoStream {
     public VideoStream(String filename) throws Exception {
 
         // init variables
+        this.filename = filename;
         fis = new FileInputStream(filename);
         frame_nb = 0;//TODO: POSSIVELMENTE VAI TER QUE SER ALTERADO AQUI TAMBEM 
+    }
+
+    public void setFrameNb(int frameNb) throws Exception{
+        this.frame_nb = frameNb;
+        fis = new FileInputStream(filename);
     }
 
     // -----------------------------------
