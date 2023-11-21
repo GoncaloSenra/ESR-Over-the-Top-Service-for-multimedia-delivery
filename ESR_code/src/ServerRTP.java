@@ -58,7 +58,7 @@ public class ServerRTP implements ActionListener{
             System.out.println("Servidor: erro no video: " + e.getMessage());
         }
 
-        sTimer.start();
+        //sTimer.start();
     }
     
     // ------------------------
@@ -68,16 +68,17 @@ public class ServerRTP implements ActionListener{
 
         // if the current image nb is less than the length of the video
 
-        System.out.println("A enviar video para o RP " + imagenb);
         if(isRunning){
+            System.out.println("A enviar video para o RP " + imagenb);
 
         
             if (imagenb < VIDEO_LENGTH) {
                 // update current imagenb
                 imagenb++;
-                System.out.println("A enviar frame " + imagenb);
+                System.out.println("A enviar frame " + imagenb + " - " + VIDEO_LENGTH);
                 try {
                     // get next frame to send from the video, as well as its size
+                    while(true)
                     int image_length = video.getnextframe(sBuf);
                     System.out.println("A enviar frame " + imagenb + " com tamanho " + image_length);
                     // Builds an RTPpacket object containing the frame
@@ -107,6 +108,7 @@ public class ServerRTP implements ActionListener{
                     // label.setText("Send frame #" + imagenb);
                 } catch (Exception ex) {
                     System.out.println("Exception caught: " + ex);
+                    ex.printStackTrace();
                     System.exit(0);
                 }
             } else {
@@ -156,7 +158,10 @@ public class ServerRTP implements ActionListener{
         try {
             this.isRunning = true;
             this.imagenb = image_nb;
+            sTimer.setInitialDelay(0);
+            sTimer.setCoalesce(true);
             sTimer.start(); // Iniciar o timer
+            sBuf = new byte[15000]; // allocate memory for the sending buffer
             
         } catch (Exception e) {
             System.err.println("Erro ao iniciar a thread: " + e.getMessage());
