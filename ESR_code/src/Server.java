@@ -94,7 +94,7 @@ class Server  {
             DatagramSocket connSocket = new DatagramSocket(5004);
             connSocket.setSoTimeout(5000);
 
-            while (true) {
+            //while (true) {
                 try {
                         // if (retry) {
                     //retry = false;
@@ -130,7 +130,7 @@ class Server  {
                     }
                     System.out.println("Rois me a pika connect_RP " + Rois.toString());
                 }
-            }
+            //}
                 
 
         } catch (SocketException e1) {
