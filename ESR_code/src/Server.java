@@ -92,39 +92,52 @@ class Server  {
 
         try {
             DatagramSocket connSocket = new DatagramSocket(5004);
+            connSocket.setSoTimeout(5000);
 
-            // while (true) {
-            // if (retry) {
-            retry = false;
-            ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
+            while (true) {
+                try {
+                        // if (retry) {
+                    //retry = false;
+                    ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
 
-            for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
-                lista.add(entry.getKey());
+                    for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
+                        lista.add(entry.getKey());
+                    }
+                    Packet p = new Packet(lista);
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos);
+                    oos.writeObject(p);
+                    oos.close();
+                    byte[] data = baos.toByteArray();
+                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
+                    connSocket.send(sendPacket);
+                    System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
+                    // semaphore.release();
+                    // }
+                    // Thread.sleep(2000);
+
+                    // }
+                } catch (SocketTimeoutException e3) {
+                    System.out.println("caiu RP");
+                    retry = true;
+
+                    for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
+                        if (!(entry.getValue() == null)) {
+                            System.err.println("conexao sumiu " + entry.getKey());
+                            entry.getValue().stopThread();
+
+                        }
+                    }
+                    System.out.println("Rois me a pika connect_RP " + Rois.toString());
+                }
             }
-            Packet p = new Packet(lista);
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            ObjectOutputStream oos = new ObjectOutputStream(baos);
-            oos.writeObject(p);
-            oos.close();
-            byte[] data = baos.toByteArray();
-            DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
-            connSocket.send(sendPacket);
-            System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
-            // semaphore.release();
-            // }
-            // Thread.sleep(2000);
-
-            // }
+                
 
         } catch (SocketException e1) {
             e1.printStackTrace();
         } catch (IOException e2) {
             e2.printStackTrace();
-        } /*
-           * catch (InterruptedException e3) {
-           * e3.printStackTrace();
-           * }
-           */
+        }
 
     }
 
@@ -132,7 +145,7 @@ class Server  {
         try {
             // semaphore.acquire();
             DatagramSocket pingSocket = new DatagramSocket(5001);
-            // pingSocket.setSoTimeout(5000);
+            pingSocket.setSoTimeout(5000);
 
             while (true) {
                 try {
@@ -157,7 +170,6 @@ class Server  {
                         if (!(entry.getValue() == null)) {
                             System.err.println("A parar o video " + entry.getKey());
                             entry.getValue().stopThread();
-                            entry.setValue(null);
 
                         }
                     }
