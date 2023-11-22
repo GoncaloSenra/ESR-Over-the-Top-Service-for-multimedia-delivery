@@ -47,11 +47,6 @@ public class oNode {
         oNode o = new oNode();
 
         //abrir sockets
-        
-
-        Thread thread1 = new Thread(() -> {
-            o.StreamClient();
-        });
 
         Thread thread2 = new Thread(() -> {
             o.ping();
@@ -109,8 +104,6 @@ public class oNode {
             thread8.start();
             thread9.start();
             thread13.start();
-        } else {
-            //thread1.start();
         }
         
         // Inicia as threads
@@ -713,66 +706,6 @@ public class oNode {
         }
     }
 
-    private void StreamClient() { //recebe stream do RP e envia para os clientes
-
-        try {
-
-            DatagramSocket serverSocket = new DatagramSocket(9000);
-            while (true) {
-                byte[] receiveData = new byte[8192];
-                byte[] sendData = new byte[8192];
-                
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                serverSocket.receive(receivePacket);
-                
-                byte[] data = receivePacket.getData();
-                
-    
-                ByteArrayInputStream bais = new ByteArrayInputStream(data);
-                ObjectInputStream ois = new ObjectInputStream(bais);
-
-                try {
-                    Object readObject = ois.readObject();
-                    if (readObject instanceof Packet) {
-                        Packet p = (Packet) readObject;
-                        String str = p.getData();
-                        //InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
-                        
-    
-                        System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 9000);
-                        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                        ObjectOutputStream oos = new ObjectOutputStream(baos);
-                        oos.writeObject(p);
-                        oos.close();
-                        
-                        byte[] datak = baos.toByteArray();
-                        
-                        // envia a "stream" para todos os ips que quiserem a stream
-                        for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
-                            if(entry.getKey().equals(str)){
-                                for (InetAddress ip : entry.getValue()) {
-
-                                    DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, ip, 9000);
-                                    serverSocket.send(sendPacket);
-                                    System.out.println("SENT: " + str + " to " + ip.getHostAddress() + ":" + 9000);
-
-                                }
-                            }
-                        }
-                        
-                    }
-                } catch (ClassNotFoundException e3) {
-                    e3.printStackTrace();
-                }
-
-            }
-        } catch (SocketException e1) {
-            e1.printStackTrace();
-        } catch (IOException e2) {
-            e2.printStackTrace();
-        }
-    }
-
     private void search() { // procura o RP e envia para tras (cliente) o caminho para o RP
 
         try {
@@ -816,8 +749,15 @@ public class oNode {
                         }
                         System.out.println("RECEIVED: " + p.getData() + " from " + receivePacket.getAddress() + ":" + 6000);
                         
-                        
-                        if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
+                        if(RP && !streams.contains(str)){
+                            //Pode mandar um pacote para tras a dizer que nao contem esse video e dizer quais videos contem
+                        }else if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
+                            if(RP && !streams.contains(str)){
+                                Boolean flag = false;
+                                for (byte b : data) {
+                                    
+                                }
+                            }
                             System.out.println("Contem a stream");
                             p.setHops(1);
                             InetAddress dest = p.getPath().get(p.getPath().size() - 1);

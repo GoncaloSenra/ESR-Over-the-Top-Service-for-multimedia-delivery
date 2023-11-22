@@ -7,8 +7,6 @@ import java.awt.event.*;
 import javax.swing.*;
 import javax.swing.Timer;
 
-
-
 class Client {
 
     private static String routerIP;
@@ -35,52 +33,79 @@ class Client {
     Timer cTimer; // timer used to receive data from the UDP socket
     byte[] cBuf; // buffer used to store data received from the server
 
-    
+    DatagramSocket searchSocket;
+    DatagramSocket cancelVideo;
+
     public static void main(String[] args) throws Exception {
 
         routerIP = args[0];
         videoName = args[1];
-        //System.out.println("Router IP: " + routerIP);
+        // System.out.println("Router IP: " + routerIP);
         Client c = new Client();
 
-        //ClientRTP t = new ClientRTP();
-
-        Boolean connected = true;
-        while (connected) {
-            connected = c.bestPath();
-            try {
-                Thread.sleep(2000);
-            } catch (InterruptedException e1) {
-                e1.printStackTrace();
-            }
-        }
-        c.cTimer.start();
-        
+        // ClientRTP t = new ClientRTP();
         Thread thread1 = new Thread(() -> {
+            Boolean connected = true;
+            while (connected) {
+                connected = c.bestPath();
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException e1) {
+                    e1.printStackTrace();
+                }
+            }
+            // c.cTimer.start();
+            
+            // try {
+            //     c.RTPsocket.setSoTimeout(10000);//TODO: ver se e preciso mais ou menos 
+            // } catch (SocketException e) {
+            //     // TODO Auto-generated catch block
+            //     e.printStackTrace();
+            // }
+        });
+
+        Thread thread2 = new Thread(() -> {
             try {
                 c.pongRouter();
             } catch (Exception e) {
                 e.printStackTrace();
             }
         });
-        
-        thread1.start();
 
-        System.out.println("Client: " + c.ip_router.getAddress().toString() + " " + c.ip_router.getNetwork().toString());
+        Thread thread3 = new Thread(() -> {
+            try {
+                c.cancelStream();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+        
+
+        thread1.start();
+        thread2.start();
+        thread3.start();
+
+        System.out
+                .println("Client: " + c.ip_router.getAddress().toString() + " " + c.ip_router.getNetwork().toString());
 
     }
 
     public Client() throws Exception {
-        
+
         this.ip_router = new IpWithMask(routerIP);
 
-        // this.clientSocket = new DatagramSocket(9000); 
+        // this.clientSocket = new DatagramSocket(9000);
 
         try {
             // socket e video
             this.RTPsocket = new DatagramSocket(9000); // init RTP socket (o mesmo para o cliente e servidor)
-            
-            this.RTPsocket.setSoTimeout(5000);
+
+
+            this.searchSocket = new DatagramSocket(6001);
+            this.searchSocket.setSoTimeout(2500);
+
+            this.cancelVideo = new DatagramSocket(6500);
+
             System.out.println("Cliente: vai receber video");
         } catch (SocketException e) {
             System.out.println("Cliente: erro no socket: " + e.getMessage());
@@ -95,8 +120,6 @@ class Client {
         // Buttons
         buttonPanel.setLayout(new GridLayout(1, 0));
         buttonPanel.add(setupButton);
-        buttonPanel.add(playButton);
-        buttonPanel.add(pauseButton);
         buttonPanel.add(tearButton);
 
         // handlers... (so um)
@@ -125,23 +148,22 @@ class Client {
 
         System.out.println("Play Button pressed !");
         // start the timers ...
-        //cTimer.start();
-        
+        cTimer.start();
+
     }
 
-    public Boolean bestPath(){ //vai procurar o melhor caminho para o destino
-        //1 envia pacote search(6000)
-        //2 espera pelos pacotes a receber(6001)
-        //3 escolhe o melhor caminho
-        //4 envia o pacote para o melhor caminho sendo esse pacote noutra porta (7000)
-        
-        //variaveis
+    public Boolean bestPath() { // vai procurar o melhor caminho para o destino
+        // 1 envia pacote search(6000)
+        // 2 espera pelos pacotes a receber(6001)
+        // 3 escolhe o melhor caminho
+        // 4 envia o pacote para o melhor caminho sendo esse pacote noutra porta (7000)
+
+        // variaveis
         ConcurrentLinkedQueue<Packet> pacotes = new ConcurrentLinkedQueue<Packet>();
-        
+
         try {
-            DatagramSocket searchSocket = new DatagramSocket(6001);
-            //1
-            searchSocket.setSoTimeout(2500);
+
+            // 1
             Packet p = new Packet(videoName);
             p.setAux(1);
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -154,35 +176,36 @@ class Client {
             System.out.println("SENT: " + videoName + " to " + ip_router.getAddress() + ":" + 6000);
 
             try {
-                //2
+                // 2
                 while (true) {
                     byte[] receiveData = new byte[8192];
-        
+
                     DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                     searchSocket.receive(receivePacket);
-                    
+
                     byte[] dataR = receivePacket.getData();
-                    
-        
+
                     ByteArrayInputStream bais = new ByteArrayInputStream(dataR);
                     ObjectInputStream ois = new ObjectInputStream(bais);
 
                     Object readObject = ois.readObject();
                     if (readObject instanceof Packet) {
                         Packet pdi = (Packet) readObject;
-                        //String str = pdi.getData();
-                        InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
+                        // String str = pdi.getData();
+                        InetAddress IPAddress = InetAddress
+                                .getByName(receivePacket.getAddress().toString().replace("/", ""));
                         pdi.setPathInv(IPAddress);
                         pdi.setHops(pdi.getHops() + 1);
                         pacotes.add(pdi);
-                        //System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 6001 + " -> " + pdi.getPathInv().toString() + " -> " + pdi.getHops() + pdi.getPath().toString());
-                        
-                        
+                        // System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress()
+                        // + ":" + 6001 + " -> " + pdi.getPathInv().toString() + " -> " + pdi.getHops()
+                        // + pdi.getPath().toString());
+
                         System.out.println("====================================");
                     }
                 }
             } catch (SocketTimeoutException e3) {
-                System.out.println("TIMEOUT");               
+                System.out.println("TIMEOUT");
             } catch (ClassNotFoundException e3) {
                 e3.printStackTrace();
             }
@@ -193,41 +216,39 @@ class Client {
                 System.out.println(packet.getPath().toString());
             }
             System.out.println("====================================");
-            
-            //3
-            //escolher o pacote com menos saltos e com menor latencia (ordem da lista)
+
+            // 3
+            // escolher o pacote com menos saltos e com menor latencia (ordem da lista)
             Packet bestPacket = pacotes.peek();
             for (Packet packet : pacotes) {
-                if(packet.getHops() < bestPacket.getHops()){
+                if (packet.getHops() < bestPacket.getHops()) {
                     bestPacket = packet;
                 }
             }
             System.out.println("====================================");
-            
-            //4
-            //enviar o pacote para o melhor caminho
-            if(bestPacket.getPathInv().size() == 0){
+
+            // 4
+            // enviar o pacote para o melhor caminho
+            if (pacotes.size() == 0) {
                 return true;
-            }else{
+            } else {
 
-            
-            DatagramSocket sendSocket = new DatagramSocket();
+                InetAddress dest2 = bestPacket.getPathInv().get(bestPacket.getPathInv().size() - 1);
+                bestPacket.setHops(1);
+                bestPacket.setData(videoName);
 
-            InetAddress dest2 = bestPacket.getPathInv().get(bestPacket.getPathInv().size() - 1);
-            bestPacket.setHops(1);
-            bestPacket.setData(videoName);
-
-            ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
-            ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
-            oos2.writeObject(bestPacket);
-            oos2.close();
-            byte[] datak = baos2.toByteArray();
-            DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);//envia para tras na porta 6001
-            sendSocket.send(sendPacket2);
-            System.out.println("SENT to pc -> to: " + dest2.getHostAddress() + ":" + 7000);
-            return false;
+                ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
+                ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
+                oos2.writeObject(bestPacket);
+                oos2.close();
+                byte[] datak = baos2.toByteArray();
+                DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);// envia para tras na
+                                                                                                  // porta 6001
+                searchSocket.send(sendPacket2);
+                System.out.println("SENT to pc -> to: " + dest2.getHostAddress() + ":" + 7000);
+                return false;
             }
-            
+
         } catch (SocketException e1) {
             e1.printStackTrace();
         } catch (IOException e2) {
@@ -236,39 +257,59 @@ class Client {
         return true;
     }
 
-
     public void pongRouter() {
 
         try {
             DatagramSocket pingSocket = new DatagramSocket(2001);
-            pingSocket.setSoTimeout(5000);
-            while(true){
-                //TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o router? foi down e que tem que se ligar de novo
+            while (true) {
+                // TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o
+                // router? foi down e que tem que se ligar de novo
                 try {
-                    
-                
-                byte[] receiveData = new byte[8192];
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                pingSocket.receive(receivePacket);
-                byte[] data = new byte[8192];
-                
-                data = "PONG".getBytes();
-    
-                DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress() ,2000);
-                pingSocket.send(sendPacket);
-                } catch (SocketTimeoutException e3) {
 
-                    System.out.println("CAIU Router folha"); 
-                    bestPath();
+                    byte[] receiveData = new byte[8192];
+                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                    pingSocket.receive(receivePacket);
+                    byte[] data = new byte[8192];
+
+                    data = "PONG".getBytes();
+
+                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), 2000);
+                    pingSocket.send(sendPacket);
+                } catch (Exception e) {
+                    continue;
+                    // TODO: handle exception
                 }
                 
-            }
-            } catch (SocketException e1) {
-                    e1.printStackTrace();
-            } catch (IOException e2) {
-                e2.printStackTrace();
-            }
 
+            }
+        } catch (SocketException e1) {
+            e1.printStackTrace();
+        }
+
+    }
+
+    public void cancelStream() {
+        try {
+            while (true) {
+                byte[] receiveData = new byte[8192];
+                byte[] sendData = new byte[8192];
+                
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                cancelVideo.receive(receivePacket);
+                //System.out.println("PING recebido! ->" + receivePacket.getAddress().getHostName());
+                Boolean connected = true;
+                while (connected) {
+                    connected = bestPath();
+                    try {
+                        Thread.sleep(5000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            }       
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     // Handler for tear button
@@ -307,7 +348,7 @@ class Client {
                         + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
 
                 // print header bitstream:
-                //rtp_packet.printheader();
+                // rtp_packet.printheader();
                 System.out.println("videoName-> " + rtp_packet.getVideoName());
 
                 // get the payload bitstream from the RTPpacket object
@@ -322,18 +363,9 @@ class Client {
                 // display the image as an ImageIcon object
                 icon = new ImageIcon(image);
                 iconLabel.setIcon(icon);
-            } catch (SocketTimeoutException ste){
-                //vai tentar se conectar outra vez
-                System.out.println("TIMEOUT");
-                Boolean connected = true;
-                while (connected) {
-                    connected = bestPath();
-                    try {
-						Thread.sleep(2000);
-					} catch (InterruptedException e1) {
-						e1.printStackTrace();
-					}
-                }
+
+                //TODO: talvez tenha que ter um timeout ca tb pois se o router folha arder o cliente tem que esperar que ele se conecte de novo
+                // ou fazer isto no pong, talvez seja mais facil
             } catch (InterruptedIOException iioe) {
                 System.out.println("Nothing to read");
             } catch (IOException ioe) {
