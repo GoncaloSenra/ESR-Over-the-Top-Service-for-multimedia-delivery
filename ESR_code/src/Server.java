@@ -95,7 +95,7 @@ class Server  {
             connSocket.setSoTimeout(5000);
 
             //while (true) {
-                try {
+                try { 
                         // if (retry) {
                     //retry = false;
                     ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();

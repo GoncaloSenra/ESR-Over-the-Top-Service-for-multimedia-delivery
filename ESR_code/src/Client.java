@@ -45,7 +45,7 @@ class Client {
 
         //ClientRTP t = new ClientRTP();
 
-        Boolean connected = false;
+        Boolean connected = true;
         while (connected) {
             connected = c.bestPath();
             try {
@@ -80,7 +80,7 @@ class Client {
             // socket e video
             this.RTPsocket = new DatagramSocket(9000); // init RTP socket (o mesmo para o cliente e servidor)
             
-            RTPsocket.setSoTimeout(5000);
+            this.RTPsocket.setSoTimeout(5000);
             System.out.println("Cliente: vai receber video");
         } catch (SocketException e) {
             System.out.println("Cliente: erro no socket: " + e.getMessage());
@@ -207,7 +207,7 @@ class Client {
             //4
             //enviar o pacote para o melhor caminho
             if(bestPacket.getPathInv().size() == 0){
-                return false;
+                return true;
             }else{
 
             
@@ -225,7 +225,7 @@ class Client {
             DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);//envia para tras na porta 6001
             sendSocket.send(sendPacket2);
             System.out.println("SENT to pc -> to: " + dest2.getHostAddress() + ":" + 7000);
-            return true;
+            return false;
             }
             
         } catch (SocketException e1) {
@@ -233,7 +233,7 @@ class Client {
         } catch (IOException e2) {
             e2.printStackTrace();
         }
-        return false;
+        return true;
     }
 
 
@@ -296,6 +296,7 @@ class Client {
 
             try {
                 // receive the DP from the socket:
+                System.out.println("Client: vai receber video");
                 RTPsocket.receive(rcvdp);
 
                 // create an RTPpacket object from the DP
@@ -323,7 +324,8 @@ class Client {
                 iconLabel.setIcon(icon);
             } catch (SocketTimeoutException ste){
                 //vai tentar se conectar outra vez
-                Boolean connected = false;
+                System.out.println("TIMEOUT");
+                Boolean connected = true;
                 while (connected) {
                     connected = bestPath();
                     try {
