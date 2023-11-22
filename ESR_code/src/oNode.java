@@ -749,9 +749,7 @@ public class oNode {
                         }
                         System.out.println("RECEIVED: " + p.getData() + " from " + receivePacket.getAddress() + ":" + 6000);
                         
-                        if(RP && !streams.contains(str)){
-                            //Pode mandar um pacote para tras a dizer que nao contem esse video e dizer quais videos contem
-                        }else if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
+                        if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
                             Boolean flag = true;
                             if(RP && !streams.contains(str)){
                                 flag = false;
@@ -774,6 +772,8 @@ public class oNode {
                                 DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 6001);//envia para tras na porta 6001
                                 searchSocket.send(sendPacket);
                                 System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 6001);
+                            }else{
+                                //nao contem a stream que pediu, e o ardes!
                             }
                         }else{ // vai procurar o destino
                             System.out.println("Nao contem a stream");
