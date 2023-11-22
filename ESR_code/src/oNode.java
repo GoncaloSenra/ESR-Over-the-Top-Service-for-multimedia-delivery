@@ -752,24 +752,29 @@ public class oNode {
                         if(RP && !streams.contains(str)){
                             //Pode mandar um pacote para tras a dizer que nao contem esse video e dizer quais videos contem
                         }else if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
+                            Boolean flag = true;
                             if(RP && !streams.contains(str)){
-                                Boolean flag = false;
-                                for (byte b : data) {
-                                    
+                                flag = false;
+                                for (ServerInfo server : servers) {
+                                    ConcurrentLinkedQueue<String> videos = server.getVideos();
+                                    if (videos.contains(str.trim())) {
+                                        flag = true;
+                                    }
                                 }
                             }
-                            System.out.println("Contem a stream");
-                            p.setHops(1);
-                            InetAddress dest = p.getPath().get(p.getPath().size() - 1);
-                            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                            ObjectOutputStream oos = new ObjectOutputStream(baos);
-                            oos.writeObject(p);
-                            oos.close();
-                            byte[] datak = baos.toByteArray();
-                            DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 6001);//envia para tras na porta 6001
-                            searchSocket.send(sendPacket);
-                            System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 6001);
-
+                            if(flag){
+                                System.out.println("Contem a stream");
+                                p.setHops(1);
+                                InetAddress dest = p.getPath().get(p.getPath().size() - 1);
+                                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                                ObjectOutputStream oos = new ObjectOutputStream(baos);
+                                oos.writeObject(p);
+                                oos.close();
+                                byte[] datak = baos.toByteArray();
+                                DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, dest, 6001);//envia para tras na porta 6001
+                                searchSocket.send(sendPacket);
+                                System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 6001);
+                            }
                         }else{ // vai procurar o destino
                             System.out.println("Nao contem a stream");
                             ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -1179,113 +1184,6 @@ public class oNode {
         }
         
     }
-
-    public InetAddress bestPathPikeno(String videoName){ //vai procurar o melhor caminho para o destino
-    //     //1 envia pacote search(6000)
-    //     //2 espera pelos pacotes a receber(6001)
-    //     //3 escolhe o melhor caminho
-    //     //4 envia o pacote para o melhor caminho sendo esse pacote noutra porta (7000)
-        
-    //     //variaveis
-    //     ConcurrentLinkedQueue<Packet> pacotes = new ConcurrentLinkedQueue<Packet>();
-    //     InetAddress addr = null;
-    //     try {
-    //         DatagramSocket searchSocket2 = new DatagramSocket(6001);
-    //         //1
-    //         searchSocket2.setSoTimeout(2500);
-    //         Packet p = new Packet(videoName);
-    //         p.setAux(1);
-    //         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    //         ObjectOutputStream oos = new ObjectOutputStream(baos);
-    //         oos.writeObject(p);
-    //         oos.close();
-    //         byte[] data = baos.toByteArray();
-            
-    //         for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
-    //             DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getKey().getAddress(), 6000);
-    //             searchSocket2.send(sendPacket);
-    //             System.out.println("SENT: " + videoName + " to " + entry.getKey().getAddress() + ":" + 6000);
-    //         }
-
-    //         try {
-    //             //2
-    //             while (true) {
-    //                 byte[] receiveData = new byte[8192];
-        
-    //                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-    //                 searchSocket2.receive(receivePacket);
-                    
-    //                 byte[] dataR = receivePacket.getData();
-                    
-        
-    //                 ByteArrayInputStream bais = new ByteArrayInputStream(dataR);
-    //                 ObjectInputStream ois = new ObjectInputStream(bais);
-
-    //                 Object readObject = ois.readObject();
-    //                 if (readObject instanceof Packet) {
-    //                     Packet pdi = (Packet) readObject;
-    //                     //String str = pdi.getData();
-    //                     InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
-    //                     pdi.setPathInv(IPAddress);
-    //                     pdi.setHops(pdi.getHops() + 1);
-    //                     pacotes.add(pdi);
-    //                     //System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 6001 + " -> " + pdi.getPathInv().toString() + " -> " + pdi.getHops() + pdi.getPath().toString());
-                        
-                        
-    //                     System.out.println("====================================");
-    //                 }
-    //             }
-    //         } catch (SocketTimeoutException e3) {
-    //             System.out.println("TIMEOUT");               
-    //         } catch (ClassNotFoundException e3) {
-    //             e3.printStackTrace();
-    //         }
-
-    //         System.out.println("====================================");
-    //         for (Packet packet : pacotes) {
-    //             System.out.println(packet.toString());
-    //             System.out.println(packet.getPath().toString());
-    //         }
-    //         System.out.println("====================================");
-            
-    //         //3
-    //         //escolher o pacote com menos saltos e com menor latencia (ordem da lista)
-    //         Packet bestPacket = pacotes.peek();
-    //         for (Packet packet : pacotes) {
-    //             if(packet.getHops() < bestPacket.getHops()){
-    //                 bestPacket = packet;
-    //             }
-    //         }
-    //         System.out.println("====================================");
-            
-    //         //4
-    //         //enviar o pacote para o melhor caminho
-
-    //         InetAddress dest2 = bestPacket.getPathInv().getLast();
-    //         bestPacket.setHops(1);
-    //         bestPacket.setData(videoName);
-
-    //         ByteArrayOutputStream baos2 = new ByteArrayOutputStream();
-    //         ObjectOutputStream oos2 = new ObjectOutputStream(baos2);
-    //         oos2.writeObject(bestPacket);
-    //         oos2.close();
-    //         byte[] datak = baos2.toByteArray();
-    //         DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);//envia para tras na porta 6001
-    //         searchSocket2.send(sendPacket2);
-    //         System.out.println("SENT to pc -> to: " + dest2.getHostAddress() + ":" + 7000);
-    //         searchSocket2.close();
-    //         //
-    //         addr = bestPacket.getPathInv().getLast();
-            
-    //     } catch (SocketException e1) {
-    //         e1.printStackTrace();
-    //     } catch (IOException e2) {
-    //         e2.printStackTrace();
-    //     }
-    //     return addr;
-        return null;
-    }
-
 
     private void pong(){
         
