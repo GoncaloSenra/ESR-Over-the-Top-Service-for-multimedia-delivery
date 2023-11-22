@@ -37,7 +37,7 @@ public class VideoStream {
         fis.read(frame_length, 0, 5);
 
         // transform frame_length to integer
-        length_string = new String(frame_length);
+        length_string = new String(frame_length, "UTF-8");
         length = Integer.parseInt(length_string);
 
         return (fis.read(frame, 0, length));
