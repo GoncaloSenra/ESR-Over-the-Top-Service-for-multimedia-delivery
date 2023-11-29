@@ -868,7 +868,7 @@ public class oNode {
                         System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 7000);
                         
                         System.out.println(streams.toString());
-                        System.out.println("|" + str + "|");
+                        //System.out.println("|" + str + "|");
 
                         if(!streams.contains(str)){
                             if(!bestPath.containsKey(str)){

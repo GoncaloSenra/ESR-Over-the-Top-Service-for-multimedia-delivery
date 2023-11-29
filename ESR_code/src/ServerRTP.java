@@ -101,7 +101,7 @@ public class ServerRTP implements ActionListener{
 
                     // System.out.println("Send frame #" + imagenb);
                     // print the header bitstream
-                    rtp_packet.printheader();
+                    // rtp_packet.printheader();
 
                 } catch (Exception ex) {
                     System.out.println("Exception caught: " + ex);
