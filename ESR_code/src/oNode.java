@@ -158,7 +158,7 @@ public class oNode {
         semaphore = new Semaphore(1);
     }
 
-    private void StreamServer() { // stream desde os servers ate ao RP,(Apenas o RP tem esta funcao)
+    private void StreamServer() { // stream desde os servers ate ao client
 
         try {
 
@@ -173,9 +173,13 @@ public class oNode {
                 // create an RTPpacket object from the DP
                 RTPpacket rtp_packet = new RTPpacket(receivePacket.getData(), receivePacket.getLength());
 
+                if(rtp_packet.getsequencenumber() == 1){
+                    System.out.println("RECEIVED: " + rtp_packet.getVideoName() + " from " + receivePacket.getAddress() + ":" + 9000);
+                }
+                
                 // print important header fields of the RTP packet received:
-                System.out.println("Got RTP packet with SeqNum # " + rtp_packet.getsequencenumber() + " TimeStamp "
-                        + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
+                // System.out.println("Got RTP packet with SeqNum # " + rtp_packet.getsequencenumber() + " TimeStamp "
+                        // + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
 
                 String str = rtp_packet.getVideoName();
                 // get to total length of the full rtp packet to send
@@ -187,15 +191,16 @@ public class oNode {
 
                 // envia a "stream" para todos os ips que quiserem a stream
                 for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry : bestPath.entrySet()) {
-                    System.out.println("entry: " +"|"+ entry.getKey()+ "|" + "entry" + "|" + str + "|");
+                    // System.out.println("entry: " +"|"+ entry.getKey()+ "|" + "entry" + "|" + str + "|");
                     
                     if(entry.getKey().trim().equals(str.trim())){
                         for (InetAddress ip : entry.getValue()) {
 
                             DatagramPacket sendPacket = new DatagramPacket(packet_bits, packet_length, ip, 9000);
                             serverSocket.send(sendPacket);
-                            System.out.println("SENT: " + str + " to " + ip.getHostAddress() + ":" + 9000);
-
+                            if(rtp_packet.getsequencenumber() == 1){
+                                System.out.println("SENT: " + str + " to " + ip.getHostAddress() + ":" + 9000);
+                            }
                         }
                     }
                 }
