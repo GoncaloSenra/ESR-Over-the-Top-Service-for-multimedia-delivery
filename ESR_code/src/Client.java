@@ -277,12 +277,12 @@ class Client {
                 System.out.println("Router folha down");
                 Boolean connected = true;
                 while (connected) {
-                    connected = bestPath();
                     try {
-                        Thread.sleep(2000);
+                        Thread.sleep(5000);
                     } catch (InterruptedException e1) {
                         e1.printStackTrace();
                     }
+                    connected = bestPath();
                 }
             } catch (Exception e) {
                 continue;
