@@ -221,11 +221,10 @@ public class oNode {
             DatagramSocket checkSocket = new DatagramSocket(9999);
             while (true) {
                 
-                Thread.sleep(25000); //vai verificar se as metricas sao as melhores 
+                Thread.sleep(30000); //vai verificar se as metricas sao as melhores 
 
                 semaphore.acquire();
-                System.out.println("===CHECK (if has video)===");
-                // byte[] sendData = new byte[8192];
+                System.out.println("===CHECK (se tem video)===");
                 System.out.println(streams.toString());
                 for (String stream : streams) {
                     
@@ -292,7 +291,7 @@ public class oNode {
         }
     }
     
-    private void pingServer() { // veridica o estado dos servers e remove os que nao respondem
+    private void pingServer() { // verifica o estado dos servers e remove os que nao respondem
             
         try {
 
@@ -315,7 +314,7 @@ public class oNode {
                             Date now = new Date();
                             double timeSend = now.getTime();
                             pingSocket.send(sendPacket);
-                            System.out.println("PING enviado para: " + entry.getAddress().getHostName());   
+                            // System.out.println("PING enviado para: " + entry.getAddress().getHostName());//DEBUG: Print de PINGS   
                             
                             
                             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -332,7 +331,6 @@ public class oNode {
 
                             break;
                         } catch (SocketTimeoutException e3) {
-                            //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
                             System.out.println("[Feedback]: Retry: " + i);
                             if (i == 2) {
                                 
@@ -422,7 +420,7 @@ public class oNode {
 
     }
 
-    private void pingClient() { // veridica o estado dos clientes e remove os que nao respondem
+    private void pingClient() { // verifica o estado dos clientes e remove os que nao respondem
             
             try {
     
@@ -444,7 +442,7 @@ public class oNode {
                                 DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry, 2001);
 
                                 pingCSocket.send(sendPacket);
-                                //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                                //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName()); //DEBUG: Print de PINGS
                                 
                                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                                 pingCSocket.receive(receivePacket);          
@@ -490,7 +488,7 @@ public class oNode {
                                 }else {
                                     continue;
                                 }
-                                //System.out.println("Tabela ardes -> " + activeRouters.toString());          
+                                //System.out.println("Tabela de routers -> " + activeRouters.toString());          
                             } 
 
                         }
@@ -524,7 +522,7 @@ public class oNode {
 
                 System.out.println("------- CANCEL ----------");
                 System.out.println("RECEIVED: " + entry + " from " + receivePacket.getAddress() + ":" + 6666);
-                System.out.println("0best Path: " + bestPath.toString());
+                System.out.println("Best Path: " + bestPath.toString());
                 for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
                     // System.out.println("entry2: " +"|"+ entry2.getKey()+ "|" + "entry" + "|" + entry + "|");
                     if(entry2.getKey().trim().equals(entry.trim())){
@@ -624,7 +622,7 @@ public class oNode {
 
                 System.out.println("=== CANCEL stream to Client ===");
                 System.out.println("RECEIVED: " + entry + " from " + receivePacket.getAddress() + ":" + 6500);
-                System.out.println("0best Path: " + bestPath.toString());
+                System.out.println("Best Path: " + bestPath.toString());
                 System.out.println();
                 
                 for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
@@ -805,7 +803,7 @@ public class oNode {
                                 searchSocket.send(sendPacket);
                                 System.out.println("SENT to pc -> to: " + dest.getHostAddress() + ":" + 6001);
                             }else{
-                                //nao contem a stream que pediu, e o ardes!
+                                //nao contem a stream que pediu!
                             }
                         }else{ // vai procurar o destino
                             System.out.println("[Feedback]: Nao contem stream");
@@ -815,16 +813,9 @@ public class oNode {
                             oos.close();
                             byte[] datak = baos.toByteArray();
                             
-                            // FIXME: Vale a pena?
-                            // System.out.println("====================================");
-                            // for (InetAddress ip : p.getNetworks()) {
-                            //     System.out.println("->" + ip.getHostAddress());
-                            // }
-                            // System.out.println("====================================");
-                            // System.out.println(activeRouters.toString());
-                            // System.out.println(p.getNetworks().toString());
-                            // System.out.println("====================================");
-                            System.out.println("[Feedback]: not RP and not stream");
+                            System.out.println("=== Networks ===");
+                            System.out.println(p.getNetworks().toString());
+
 
                             for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
                                 // System.out.println("##->" + entry.getKey().getNetwork().getHostAddress());
@@ -842,13 +833,13 @@ public class oNode {
                                     }
                                 
                                     if (!sent) {
-                                        System.out.println("[Feedback]: Router ativo(" + entry.getKey().getAddress() + ") e sem envios");
+                                        System.out.println("[Feedback]: Router ativo(" + entry.getKey().getAddress().getHostAddress() + ") e sem envios");
                                         DatagramPacket sendPacket = new DatagramPacket(datak, datak.length, entry.getKey().getAddress(), 6000);
                                         searchSocket.send(sendPacket);
-                                        System.out.println("SENT to Router: " + str + " to " + entry.getKey().getAddress() + ":" + 6000);
+                                        System.out.println("SENT to Router: " + str + " to " + entry.getKey().getAddress().getHostAddress() + ":" + 6000);
                                     }
                                     else {
-                                        System.out.println("[Feedback]: Pacote ja enviado para este router");
+                                        System.out.println("[Feedback]: Pacote ja enviado para este router" + entry.getKey().getAddress().getHostAddress());
                                     }
                                 }
                             }
@@ -1074,7 +1065,7 @@ public class oNode {
                             
                             DatagramPacket sendPacket = new DatagramPacket(data, data.length, entry.getKey().getAddress(), 8500);
                             pingSocket.send(sendPacket);
-                            //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                            //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName()); //DEBUG: Print de PINGS
                             
                             
                             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -1262,17 +1253,12 @@ public class oNode {
                         e3.printStackTrace();
                     }
                 }
-                // ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                // ObjectOutputStream oos = new ObjectOutputStream(baos);
-                // oos.writeObject("pong");
-                // oos.close();
-                
-                // sendData = baos.toByteArray();
+
                 sendData = "pong".getBytes();
 
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), 8000);
                 pongSocket.send(sendPacket);
-                //System.out.println("PONG enviado! ->" + receivePacket.getAddress().getHostName());
+                //System.out.println("PONG enviado! ->" + receivePacket.getAddress().getHostName()); //DEBUG: Print de PINGS
             }
             
 

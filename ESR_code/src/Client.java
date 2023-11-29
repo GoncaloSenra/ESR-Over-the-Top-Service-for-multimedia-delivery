@@ -44,7 +44,6 @@ class Client {
         // System.out.println("Router IP: " + routerIP);
         Client c = new Client();
 
-        // ClientRTP t = new ClientRTP();
         Thread thread1 = new Thread(() -> {
             Boolean connected = true;
             while (connected) {
@@ -198,21 +197,21 @@ class Client {
                         // + ":" + 6001 + " -> " + pdi.getPathInv().toString() + " -> " + pdi.getHops()
                         // + pdi.getPath().toString());
 
-                        System.out.println("====================================");
+                        // System.out.println("====================================");
                     }
                 }
             } catch (SocketTimeoutException e3) {
-                System.out.println("TIMEOUT");
+                System.out.println("TIMEOUT\n");
             } catch (ClassNotFoundException e3) {
                 e3.printStackTrace();
             }
 
-            System.out.println("====================================");
+            System.out.println("===Caminhos possiveis===");
             for (Packet packet : pacotes) {
-                System.out.println(packet.toString());
+                // System.out.println(packet.toString());
                 System.out.println(packet.getPath().toString());
             }
-            System.out.println("====================================");
+            // System.out.println("====================================");
 
             // 3
             // escolher o pacote com menos saltos e com menor latencia (ordem da lista)
@@ -222,13 +221,16 @@ class Client {
                     bestPacket = packet;
                 }
             }
-            System.out.println("====================================");
+            // System.out.println("====================================");
+            
 
             // 4
             // enviar o pacote para o melhor caminho
             if (pacotes.size() == 0) {
                 return true;
             } else {
+                System.out.println("===Caminhos escolhido===");
+                System.out.println(bestPacket.getPath().toString());
 
                 InetAddress dest2 = bestPacket.getPathInv().get(bestPacket.getPathInv().size() - 1);
                 bestPacket.setHops(1);
@@ -239,8 +241,8 @@ class Client {
                 oos2.writeObject(bestPacket);
                 oos2.close();
                 byte[] datak = baos2.toByteArray();
-                DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);// envia para tras na
-                                                                                                  // porta 6001
+                DatagramPacket sendPacket2 = new DatagramPacket(datak, datak.length, dest2, 7000);
+                                                                                                  
                 searchSocket.send(sendPacket2);
                 System.out.println("SENT to pc -> to: " + dest2.getHostAddress() + ":" + 7000);
                 return false;
@@ -270,7 +272,7 @@ class Client {
                 DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), 2000);
                 pingSocket.send(sendPacket);
             }catch (SocketTimeoutException e3) {
-                System.out.println("Router folha down");
+                System.out.println("[Feedback] Router folha down");
                 Boolean connected = true;
                 while (connected) {
                     try {
@@ -317,7 +319,7 @@ class Client {
     class tearButtonListener implements ActionListener {
         public void actionPerformed(ActionEvent e) {
 
-            System.out.println("Teardown Button pressed !");
+            System.out.println("[Feedback] Teardown Button pressed !");
             // stop the timer
             cTimer.stop();
             // exit
@@ -343,7 +345,7 @@ class Client {
                 // create an RTPpacket object from the DP
                 RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
                 if (rtp_packet.getsequencenumber() == 1) {
-                    System.out.println("Client: vai receber video" + rtp_packet.getVideoName() + " de" + routerIP);
+                    System.out.println("[Feedback] Vai receber o video" + rtp_packet.getVideoName() + " de" + routerIP);
                 }
 
                 // print important header fields of the RTP packet received:

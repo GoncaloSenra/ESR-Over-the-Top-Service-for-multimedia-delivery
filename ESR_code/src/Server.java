@@ -91,19 +91,18 @@ class Server  {
             byte[] data = baos.toByteArray();
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
             connSocket.send(sendPacket);
-            System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
             return false;
         } catch (SocketTimeoutException e3) {
-            System.out.println("Sem resposta do RP");
+            System.out.println("[Feedback] Sem resposta do RP");
 
             for (ConcurrentHashMap.Entry<String, ServerRTP> entry : ServerStream.entrySet()) {
                 if (!(entry.getValue() == null)) {
-                    System.err.println("A parar ServerRTP" + entry.getKey());
+                    System.err.println("[Feedback] A parar ServerRTP" + entry.getKey());
                     entry.getValue().stopThread();
 
                 }
             }
-            System.out.println("ServerStream connect_RP " + ServerStream.toString());
+            // System.out.println("ServerStream connect_RP " + ServerStream.toString());
 
             return true;
         } catch (IOException e2) {
@@ -122,14 +121,14 @@ class Server  {
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 pingSocket.receive(receivePacket);
                 byte[] data = new byte[8192];
-                System.out.println("RECEIVED: " + new String(receivePacket.getData()));
+                // System.out.println("RECEIVED: " + new String(receivePacket.getData()));//DEBUG: Print de PINGS
 
                 data = "PONG".getBytes();
 
                 DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5000);
                 pingSocket.send(sendPacket);
 
-                System.out.println("SENT: PONG to RP:" + 5000);
+                // System.out.println("SENT: PONG to RP:" + 5000);//DEBUG: Print de PINGS
 
             } catch (SocketTimeoutException e3) {
 
@@ -160,7 +159,6 @@ class Server  {
                 try {
                     pingSocket.setSoTimeout(5000);
                 } catch (SocketException e) {
-                    // TODO Auto-generated catch block
                     e.printStackTrace();
                 }
             } catch (IOException e2) {
@@ -210,7 +208,6 @@ class Server  {
                                     System.out.println("A parar o video " + entry.getKey());
 
                                     entry.getValue().stopThread();
-                                    //ServerStream.put(entry.getKey(), null);
                                 }
                             }
                         }
