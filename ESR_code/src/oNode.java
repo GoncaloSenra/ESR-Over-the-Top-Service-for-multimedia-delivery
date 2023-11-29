@@ -1222,10 +1222,7 @@ public class oNode {
                         if (readObject instanceof InetAddress) {
                             InetAddress network = (InetAddress) readObject;
                             
-
-                            
-                                IpWithMask ip = new IpWithMask(receivePacket.getAddress().getHostAddress());
-                                ip.setNetwork(network);
+                                IpWithMask ip = new IpWithMask(receivePacket.getAddress(), network);
                                 activeRouters.put(ip, true);
                                 System.out.println("Adicionado: " + ip.getAddress().getHostAddress());
                             

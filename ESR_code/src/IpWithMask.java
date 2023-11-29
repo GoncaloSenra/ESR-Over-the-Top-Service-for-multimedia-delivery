@@ -25,6 +25,12 @@ public class IpWithMask implements Serializable{
         }
     }
 
+    public IpWithMask(InetAddress ip,InetAddress network) {
+        this.address = ip;
+        this.network = network;
+        this.mask = 0;
+    }
+
     public InetAddress getAddress() {
         return address;
     }
