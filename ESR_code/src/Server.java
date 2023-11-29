@@ -65,10 +65,10 @@ class Server  {
         this.ip_rp = new IpWithMask(ip);
 
         this.connSocket = new DatagramSocket(5004);
-        this.connSocket.setSoTimeout(5000);
+        this.connSocket.setSoTimeout(000);
 
         this.pingSocket = new DatagramSocket(5001);
-        this.pingSocket.setSoTimeout(5000);
+        this.pingSocket.setSoTimeout(6000);
         
         this.checkSocket  = new DatagramSocket(9999);
         
