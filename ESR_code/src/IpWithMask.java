@@ -37,6 +37,17 @@ public class IpWithMask implements Serializable{
         return network;
     }
 
+    public void setAddress(InetAddress address) {
+        this.address = address;
+    }
+    public void setNetwork(InetAddress network) {
+        this.network = network;
+    }
+    public void setMask(int mask) {
+        this.mask = mask;
+    }
+
+
     @Override
     public String toString() {
         return address.getHostAddress() + "/" + mask + " (" + network.getHostAddress() + ")";

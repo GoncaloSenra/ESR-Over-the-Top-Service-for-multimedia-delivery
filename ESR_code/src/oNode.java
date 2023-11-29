@@ -684,19 +684,29 @@ public class oNode {
                 ByteArrayInputStream bais = new ByteArrayInputStream(data);
                 ObjectInputStream ois = new ObjectInputStream(bais);
 
-                try {
-                    Object readObject = ois.readObject();
-                    if (readObject instanceof Packet) {
-                        Packet p = (Packet) readObject;
-                        ConcurrentLinkedQueue<String> info = p.getInfo();
-                        InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
-                        
-                        servers.add(new ServerInfo(IPAddress, info,-1));
+                boolean exists = false;
 
-                        System.out.println("RECEIVED: " + servers.toString() + " from " + receivePacket.getAddress() + ":" + 5003);
+                for (ServerInfo entry : servers) {
+                    if (entry.getAddress().getHostAddress().equals(receivePacket.getAddress().getHostAddress())) {
+                        exists = true;
                     }
-                } catch (ClassNotFoundException e3) {
-                    e3.printStackTrace();
+                }
+                
+                if (!exists) {
+                    try {
+                        Object readObject = ois.readObject();
+                        if (readObject instanceof Packet) {
+                            Packet p = (Packet) readObject;
+                            ConcurrentLinkedQueue<String> info = p.getInfo();
+                            InetAddress IPAddress = InetAddress.getByName(receivePacket.getAddress().toString().replace("/", ""));
+                            
+                            servers.add(new ServerInfo(IPAddress, info,-1));
+
+                            System.out.println("RECEIVED: " + servers.toString() + " from " + receivePacket.getAddress() + ":" + 5003);
+                        }
+                    } catch (ClassNotFoundException e3) {
+                        e3.printStackTrace();
+                    }
                 }
             }
         } catch (SocketException e1) {
@@ -1015,13 +1025,19 @@ public class oNode {
             pingSocket.setSoTimeout(1000);
             while (true) {
                 byte[] receiveData = new byte[8192];
-                byte[] data = new byte[8192];
+                
 
-                data = "PING".getBytes();
+                
                 
                 Thread.sleep(2000);
                 
                 for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                    ObjectOutputStream oos = new ObjectOutputStream(baos);
+                    oos.writeObject(entry.getKey().getNetwork());
+                    oos.close();
+                    byte[] data = baos.toByteArray();
+                  
                     for(int i = 0; i < 3; i++){
                     
                         try {
@@ -1102,16 +1118,6 @@ public class oNode {
 
                                         if(entry4.getValue().contains(entry.getKey().getAddress())){
                                             bestPathInv.remove(entry4.getKey());
-                                            Thread.sleep(3000);
-                                            //TODO: procura um novo e se nao encontrar remover o conteudo da lista de bestPath e propagar ate ele 
-                                            
-                                            // System.out.println("Procurar novo caminho");
-                                            // ConcurrentLinkedQueue<InetAddress> listapikena = new ConcurrentLinkedQueue<InetAddress>();
-                                            // listapikena = new ConcurrentLinkedQueue<>();
-                                            // listapikena.add(bestPathPikeno(entry4.getKey()));
-                                            // bestPathInv.put(entry4.getKey(),  listapikena);
-                                            
-                                            //nao encontrou, remover ate aos clientes a stream nas listas
                                             
                                             for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry5 : bestPath.entrySet()) {
                                                 if(entry5.getKey().trim().equals(entry4.getKey().trim())){
@@ -1198,11 +1204,43 @@ public class oNode {
                 pongSocket.receive(receivePacket);
                 //System.out.println("PING recebido! ->" + receivePacket.getAddress().getHostName());
             
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                ObjectOutputStream oos = new ObjectOutputStream(baos);
-                oos.writeObject("pong");
-                oos.close();
-                sendData = baos.toByteArray();
+                boolean exists = false;
+                for (ConcurrentHashMap.Entry<IpWithMask, Boolean> entry : activeRouters.entrySet()) {
+                    if (entry.getKey().getAddress().getHostAddress().equals(receivePacket.getAddress().getHostAddress())) {
+                        exists = true;
+                    }
+                }
+
+                if (!exists) {
+                    byte[] data = receivePacket.getData();
+                    
+                    ByteArrayInputStream bais = new ByteArrayInputStream(data);
+                    ObjectInputStream ois = new ObjectInputStream(bais);
+
+                    try {
+                        Object readObject = ois.readObject();
+                        if (readObject instanceof InetAddress) {
+                            InetAddress network = (InetAddress) readObject;
+                            
+
+                            
+                                IpWithMask ip = new IpWithMask(receivePacket.getAddress().getHostAddress());
+                                ip.setNetwork(network);
+                                activeRouters.put(ip, true);
+                                System.out.println("Adicionado: " + ip.getAddress().getHostAddress());
+                            
+                        }
+                    }catch (ClassNotFoundException e3) {
+                        e3.printStackTrace();
+                    }
+                }
+                // ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                // ObjectOutputStream oos = new ObjectOutputStream(baos);
+                // oos.writeObject("pong");
+                // oos.close();
+                
+                // sendData = baos.toByteArray();
+                sendData = "pong".getBytes();
 
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(), 8000);
                 pongSocket.send(sendPacket);

@@ -35,6 +35,7 @@ class Client {
 
     DatagramSocket searchSocket;
     DatagramSocket cancelVideo;
+    DatagramSocket pingSocket;
 
     public static void main(String[] args) throws Exception {
 
@@ -54,14 +55,13 @@ class Client {
                     e1.printStackTrace();
                 }
             }
-            // c.cTimer.start();
             
-            // try {
-            //     c.RTPsocket.setSoTimeout(10000);//TODO: ver se e preciso mais ou menos 
-            // } catch (SocketException e) {
-            //     // TODO Auto-generated catch block
-            //     e.printStackTrace();
-            // }
+            try {
+                c.pingSocket.setSoTimeout(15000);//TODO: ver se e preciso mais ou menos 
+            } catch (SocketException e) {
+                // TODO: Auto-generated catch block
+                e.printStackTrace();
+            }
         });
 
         Thread thread2 = new Thread(() -> {
@@ -79,7 +79,6 @@ class Client {
                 e.printStackTrace();
             }
         });
-        
 
         thread1.start();
         thread2.start();
@@ -100,6 +99,7 @@ class Client {
             // socket e video
             this.RTPsocket = new DatagramSocket(9000); // init RTP socket (o mesmo para o cliente e servidor)
 
+            this.pingSocket = new DatagramSocket(2001);
 
             this.searchSocket = new DatagramSocket(6001);
             this.searchSocket.setSoTimeout(2500);
@@ -258,33 +258,39 @@ class Client {
     }
 
     public void pongRouter() {
+   
+        while (true) {
+            // TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o
+            // router? foi down e que tem que se ligar de novo
+            try {
 
-        try {
-            DatagramSocket pingSocket = new DatagramSocket(2001);
-            while (true) {
-                // TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o
-                // router? foi down e que tem que se ligar de novo
-                try {
+                byte[] receiveData = new byte[8192];
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                pingSocket.receive(receivePacket);
+                byte[] data = new byte[8192];
 
-                    byte[] receiveData = new byte[8192];
-                    DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
-                    pingSocket.receive(receivePacket);
-                    byte[] data = new byte[8192];
+                data = "PONG".getBytes();
 
-                    data = "PONG".getBytes();
-
-                    DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), 2000);
-                    pingSocket.send(sendPacket);
-                } catch (Exception e) {
-                    continue;
-                    // TODO: handle exception
+                DatagramPacket sendPacket = new DatagramPacket(data, data.length, receivePacket.getAddress(), 2000);
+                pingSocket.send(sendPacket);
+            }catch (SocketTimeoutException e3) {
+                System.out.println("Router folha down");
+                Boolean connected = true;
+                while (connected) {
+                    connected = bestPath();
+                    try {
+                        Thread.sleep(2000);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
                 }
-                
-
+            } catch (Exception e) {
+                continue;
+                // TODO: handle exception
             }
-        } catch (SocketException e1) {
-            e1.printStackTrace();
+
         }
+
 
     }
 
