@@ -1303,16 +1303,10 @@ public class oNode {
                         e3.printStackTrace();
                     }
                 }
-                // ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                // ObjectOutputStream oos = new ObjectOutputStream(baos);
-                // oos.writeObject("pong");
-                // oos.close();
 
-                // sendData = baos.toByteArray();
                 sendData = "pong".getBytes();
 
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(),
-                        8000);
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, receivePacket.getAddress(),8000);
                 pongSocket.send(sendPacket);
                 // System.out.println("PONG enviado! ->" +
                 // receivePacket.getAddress().getHostName());
