@@ -10,17 +10,11 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 class Server  {
 
-    //private DatagramSocket serverSocket;
-
     private IpWithMask ip_rp;
 
     //private String path;// futuramente vai ser o path do video a streamar
 
-    private ConcurrentHashMap<String, ServerRTP> Rois;// DEBUG:
-
-    private Boolean retry;
-
-    //private static Semaphore semaphore = new Semaphore(1); // Inicializa o semáforo com uma permissão
+    private ConcurrentHashMap<String, ServerRTP> ServerStream;// DEBUG:
 
     DatagramSocket connSocket;
 
@@ -37,17 +31,17 @@ class Server  {
         // Itera pelos argumentos e os adiciona à lista
         for (int i = 1; i < args.length; i++) {
             //System.out.println();
-            s.Rois.put(args[i], new ServerRTP(args[i], s.ip_rp.getAddress(), 0, args[i],false));//TODO: image_nb tem que vir no pacote do RP, NAME TEM QUE SER ALTERADO TAMBE
+            s.ServerStream.put(args[i], new ServerRTP(args[i], s.ip_rp.getAddress(), 0, args[i],false));
         }
 
         // Exibe os argumentos armazenados na lista
         System.out.println("Argumentos fornecidos:");
-        System.out.println(s.Rois.toString());
+        System.out.println(s.ServerStream.toString());
 
 
 
         Thread thread1 = new Thread(() -> {
-            boolean con = s.connect_RP();
+            s.connect_RP();
         });
 
         Thread thread2 = new Thread(() -> {
@@ -67,8 +61,7 @@ class Server  {
 
     public Server(String ip) throws Exception {
 
-        this.Rois = new ConcurrentHashMap<>();
-        this.retry = true;
+        this.ServerStream = new ConcurrentHashMap<>();
         this.ip_rp = new IpWithMask(ip);
 
         this.connSocket = new DatagramSocket(5004);
@@ -82,29 +75,12 @@ class Server  {
         System.out.println("-----------------");
     }
 
-    public ConcurrentHashMap<String, ServerRTP> getRois() {
-        return Rois;
-    }
-
-    public void setRois(String key, ServerRTP value) {
-        Rois.put(key, value);
-    }
-
-    public Boolean getRetry() {
-        return retry;
-    }
-
-    public void setRetry(Boolean retry) {
-        this.retry = retry;
-    }
-
-
     public boolean connect_RP() {
         
         try { 
             ConcurrentLinkedQueue<String> lista = new ConcurrentLinkedQueue<String>();
 
-            for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
+            for (ConcurrentHashMap.Entry<String, ServerRTP> entry : ServerStream.entrySet()) {
                 lista.add(entry.getKey());
             }
             Packet p = new Packet(lista);
@@ -118,17 +94,16 @@ class Server  {
             System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
             return false;
         } catch (SocketTimeoutException e3) {
-            System.out.println("caiu RP");
-            retry = true;
+            System.out.println("Sem resposta do RP");
 
-            for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
+            for (ConcurrentHashMap.Entry<String, ServerRTP> entry : ServerStream.entrySet()) {
                 if (!(entry.getValue() == null)) {
-                    System.err.println("conexao sumiu " + entry.getKey());
+                    System.err.println("A parar ServerRTP" + entry.getKey());
                     entry.getValue().stopThread();
 
                 }
             }
-            System.out.println("Rois me a pika connect_RP " + Rois.toString());
+            System.out.println("ServerStream connect_RP " + ServerStream.toString());
 
             return true;
         } catch (IOException e2) {
@@ -142,8 +117,6 @@ class Server  {
         
         while (true) {
             try {
-                // TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o
-                // rp foi down e que tem que se ligar de novo
 
                 byte[] receiveData = new byte[8192];
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -157,16 +130,19 @@ class Server  {
 
             } catch (SocketTimeoutException e3) {
 
-                System.out.println("CAIU");
-                retry = true;
-                for (ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()) {
+                System.out.println("Timeout: ");
+                for (ConcurrentHashMap.Entry<String, ServerRTP> entry : ServerStream.entrySet()) {
                     if (!(entry.getValue() == null)) {
                         System.err.println("A parar o video " + entry.getKey());
                         entry.getValue().stopThread();
 
                     }
                 }
-                System.out.println("Rois me a pika " + Rois.toString());
+                try {
+                    pingSocket.setSoTimeout(0);
+                } catch (SocketException e) {
+                    e.printStackTrace();
+                }
 
                 Boolean connect = true;
                 while (connect) {
@@ -177,6 +153,12 @@ class Server  {
                     }
                     connect = connect_RP();
                     System.out.println("connect_RP " + connect);
+                }
+                try {
+                    pingSocket.setSoTimeout(5000);
+                } catch (SocketException e) {
+                    // TODO Auto-generated catch block
+                    e.printStackTrace();
                 }
             } catch (IOException e2) {
                 e2.printStackTrace();
@@ -206,13 +188,12 @@ class Server  {
 
                     if (p.getAux() == 1){//inicio do video
 
-                        for(ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()){
+                        for(ConcurrentHashMap.Entry<String, ServerRTP> entry : ServerStream.entrySet()){
                             if(entry.getKey().trim().equals(p.getData().trim())){
                                 System.out.println("A enviar video para o RP " + entry.getKey());
                                 File f = new File(entry.getKey());
                                 if (f.exists()) {
-                                    entry.getValue().startThread(0);//TODO: image_nb tem que vir no pacote do RP,OU CANCELAR PRIMEIRO O OUTRO E DEVOLVER O IMAGE_NB
-                                    //Rois.put(entry.getKey(), new ServerRTP(entry.getKey(), ip_rp.getAddress(), 0, entry.getKey(),false));//TODO: image_nb tem que vir no pacote do RP
+                                    entry.getValue().startThread(0);
 
                                 } else
                                     System.out.println("Ficheiro de video não existe: " + entry.getKey());
@@ -220,13 +201,13 @@ class Server  {
                         }
                     }
                     else{//cancelar de enviar o video
-                        for(ConcurrentHashMap.Entry<String, ServerRTP> entry : Rois.entrySet()){
+                        for(ConcurrentHashMap.Entry<String, ServerRTP> entry : ServerStream.entrySet()){
                             if(entry.getKey().trim().equals(p.getData().trim())){
                                 if(!(entry.getValue() == null)){
                                     System.out.println("A parar o video " + entry.getKey());
 
                                     entry.getValue().stopThread();
-                                    //Rois.put(entry.getKey(), null);
+                                    //ServerStream.put(entry.getKey(), null);
                                 }
                             }
                         }

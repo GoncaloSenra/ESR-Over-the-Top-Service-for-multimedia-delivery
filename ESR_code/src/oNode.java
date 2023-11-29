@@ -325,7 +325,7 @@ public class oNode {
                             break;
                         } catch (SocketTimeoutException e3) {
                             //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
-                            System.out.println("ARDEU" + i);
+                            System.out.println("Retry" + i);
                             if (i == 2) {
                                 semaphore.acquire();
                                 System.out.println("REMOVIDO");
@@ -436,7 +436,7 @@ public class oNode {
                                 break;
                             } catch (SocketTimeoutException e3) {
                                 //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
-                                System.out.println("ARDEU" + i);
+                                System.out.println("Retry" + i);
                                 if (i == 2) {
                                     ip_clients.remove(entry);
                                     System.out.println("REMOVIDO");
@@ -886,7 +886,7 @@ public class oNode {
     
                             
                             if(RP){
-                                System.out.println("RP PORRA!!");
+                                System.out.println("Sou RP!");
                                 InetAddress ip = null;
                                 double latency = 1000000000;
                                 

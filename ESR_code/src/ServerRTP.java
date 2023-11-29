@@ -69,25 +69,24 @@ public class ServerRTP implements ActionListener{
         // if the current image nb is less than the length of the video
 
         if(isRunning){
-            System.out.println("A enviar video para o RP " + imagenb);
 
-        
             if (imagenb < VIDEO_LENGTH) {
                 // update current imagenb
                 imagenb++;
-                System.out.println("A enviar frame " + imagenb + " - " + VIDEO_LENGTH);
+
+                if(imagenb == 1)
+                    System.out.println("A enviar frame " + imagenb + " - " + VIDEO_LENGTH);
+
                 try {
                     // get next frame to send from the video, as well as its sizeum
                     int image_length = video.getnextframe(sBuf);;
                     
-                    System.out.println("A enviar frame " + imagenb + " com tamanho " + image_length);
+                    // System.out.println("A enviar frame " + imagenb + " com tamanho " + image_length);
                     // Builds an RTPpacket object containing the frame
-                    // RTPpacket rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb * FRAME_PERIOD, sBuf,
-                    //         image_length, entry.getKey());
                     RTPpacket rtp_packet = new RTPpacket(MJPEG_TYPE, imagenb, imagenb * FRAME_PERIOD, sBuf,
                             image_length,name);
 
-                    System.out.println(rtp_packet.toString());
+                    // System.out.println(rtp_packet.toString());
 
                     // get to total length of the full rtp packet to send
                     int packet_length = rtp_packet.getlength();
@@ -100,12 +99,10 @@ public class ServerRTP implements ActionListener{
                     senddp = new DatagramPacket(packet_bits, packet_length,ip_rp , 9000);
                     RTPsocket.send(senddp);
 
-                    System.out.println("Send frame #" + imagenb);
+                    // System.out.println("Send frame #" + imagenb);
                     // print the header bitstream
                     rtp_packet.printheader();
 
-                    // update GUI
-                    // label.setText("Send frame #" + imagenb);
                 } catch (Exception ex) {
                     System.out.println("Exception caught: " + ex);
                     ex.printStackTrace();
@@ -121,7 +118,6 @@ public class ServerRTP implements ActionListener{
                 VIDEO_LENGTH = 500; // length of the video in frames
 
                 // if we have reached the end of the video file, stop the timer
-                System.out.println("Final da stream");
                 sTimer.setInitialDelay(0);
                 sTimer.setCoalesce(true);
                 sBuf = new byte[15000];
