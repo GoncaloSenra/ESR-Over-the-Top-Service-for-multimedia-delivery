@@ -57,9 +57,8 @@ class Client {
             }
             
             try {
-                c.pingSocket.setSoTimeout(15000);//TODO: ver se e preciso mais ou menos 
+                c.pingSocket.setSoTimeout(15000);
             } catch (SocketException e) {
-                // TODO: Auto-generated catch block
                 e.printStackTrace();
             }
         });
@@ -92,8 +91,6 @@ class Client {
     public Client() throws Exception {
 
         this.ip_router = new IpWithMask(routerIP);
-
-        // this.clientSocket = new DatagramSocket(9000);
 
         try {
             // socket e video
@@ -260,8 +257,7 @@ class Client {
     public void pongRouter() {
    
         while (true) {
-            // TODO: se demorar mais de x a receber o pong,tem que avisar o utilizador que o
-            // router? foi down e que tem que se ligar de novo
+
             try {
 
                 byte[] receiveData = new byte[8192];
@@ -286,7 +282,6 @@ class Client {
                 }
             } catch (Exception e) {
                 continue;
-                // TODO: handle exception
             }
 
         }
@@ -298,7 +293,6 @@ class Client {
         try {
             while (true) {
                 byte[] receiveData = new byte[8192];
-                byte[] sendData = new byte[8192];
                 
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 cancelVideo.receive(receivePacket);
@@ -343,19 +337,22 @@ class Client {
 
             try {
                 // receive the DP from the socket:
-                System.out.println("Client: vai receber video");
+                // System.out.println("Client: vai receber video");
                 RTPsocket.receive(rcvdp);
 
                 // create an RTPpacket object from the DP
                 RTPpacket rtp_packet = new RTPpacket(rcvdp.getData(), rcvdp.getLength());
+                if (rtp_packet.getsequencenumber() == 1) {
+                    System.out.println("Client: vai receber video" + rtp_packet.getVideoName() + " de" + routerIP);
+                }
 
                 // print important header fields of the RTP packet received:
-                System.out.println("Got RTP packet with SeqNum # " + rtp_packet.getsequencenumber() + " TimeStamp "
-                        + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
+                // System.out.println("Got RTP packet with SeqNum # " + rtp_packet.getsequencenumber() + " TimeStamp "
+                //         + rtp_packet.gettimestamp() + " ms, of type " + rtp_packet.getpayloadtype());
 
                 // print header bitstream:
                 // rtp_packet.printheader();
-                System.out.println("videoName-> " + rtp_packet.getVideoName());
+                // System.out.println("videoName-> " + rtp_packet.getVideoName());
 
                 // get the payload bitstream from the RTPpacket object
                 int payload_length = rtp_packet.getpayload_length();
@@ -370,8 +367,6 @@ class Client {
                 icon = new ImageIcon(image);
                 iconLabel.setIcon(icon);
 
-                //TODO: talvez tenha que ter um timeout ca tb pois se o router folha arder o cliente tem que esperar que ele se conecte de novo
-                // ou fazer isto no pong, talvez seja mais facil
             } catch (InterruptedIOException iioe) {
                 System.out.println("Nothing to read");
             } catch (IOException ioe) {
