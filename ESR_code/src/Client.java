@@ -17,8 +17,6 @@ class Client {
 
     JFrame f = new JFrame("Cliente de Testes");
     JButton setupButton = new JButton("Setup");
-    JButton playButton = new JButton("Play");
-    JButton pauseButton = new JButton("Pause");
     JButton tearButton = new JButton("Teardown");
     JPanel mainPanel = new JPanel();
     JPanel buttonPanel = new JPanel();
@@ -102,7 +100,7 @@ class Client {
 
             this.cancelVideo = new DatagramSocket(6500);
 
-            System.out.println("Cliente: vai receber video");
+            // System.out.println("Cliente: vai receber video");
         } catch (SocketException e) {
             System.out.println("Cliente: erro no socket: " + e.getMessage());
         }
@@ -142,7 +140,6 @@ class Client {
         cTimer.setCoalesce(true);
         cBuf = new byte[15000]; // allocate enough memory for the buffer used to receive data from the server
 
-        System.out.println("Play Button pressed !");
         // start the timers ...
         cTimer.start();
 
@@ -209,7 +206,7 @@ class Client {
             System.out.println("===Caminhos possiveis===");
             for (Packet packet : pacotes) {
                 // System.out.println(packet.toString());
-                System.out.println(packet.getPath().toString());
+                System.out.println(packet.getPathInv().toString());
             }
             // System.out.println("====================================");
 
@@ -230,7 +227,7 @@ class Client {
                 return true;
             } else {
                 System.out.println("===Caminhos escolhido===");
-                System.out.println(bestPacket.getPath().toString());
+                System.out.println(bestPacket.getPathInv().toString());
 
                 InetAddress dest2 = bestPacket.getPathInv().get(bestPacket.getPathInv().size() - 1);
                 bestPacket.setHops(1);
