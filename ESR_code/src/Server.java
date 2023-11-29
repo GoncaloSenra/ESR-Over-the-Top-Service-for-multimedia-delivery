@@ -116,7 +116,7 @@ class Server  {
             DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5003);
             connSocket.send(sendPacket);
             System.out.println("SENT: " + "search" + " to " + ip_rp.getAddress() + ":" + 5003);
-
+            return false;
         } catch (SocketTimeoutException e3) {
             System.out.println("caiu RP");
             retry = true;
@@ -134,7 +134,7 @@ class Server  {
         } catch (IOException e2) {
             e2.printStackTrace();
         }
-        return false;
+        return true;
 
     }
 
@@ -167,6 +167,7 @@ class Server  {
                     }
                 }
                 System.out.println("Rois me a pika " + Rois.toString());
+
                 Boolean connect = true;
                 while (connect) {
                     try {
@@ -175,6 +176,7 @@ class Server  {
                         e1.printStackTrace();
                     }
                     connect = connect_RP();
+                    System.out.println("connect_RP " + connect);
                 }
             } catch (IOException e2) {
                 e2.printStackTrace();
