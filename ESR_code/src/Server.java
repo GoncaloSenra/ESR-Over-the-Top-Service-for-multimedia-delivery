@@ -129,6 +129,8 @@ class Server  {
                 DatagramPacket sendPacket = new DatagramPacket(data, data.length, ip_rp.getAddress(), 5000);
                 pingSocket.send(sendPacket);
 
+                System.out.println("SENT: PONG to RP:" + 5000);
+
             } catch (SocketTimeoutException e3) {
 
                 System.out.println("Timeout: ");
