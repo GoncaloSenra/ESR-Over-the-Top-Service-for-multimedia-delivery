@@ -78,7 +78,7 @@ public class RTPpacket {
 
         System.arraycopy(videoNameBytes, 0, header, 14, videoNameBytes.length);
         
-        System.out.println("header: " + header.length + " videoNameBytes: " + videoNameBytes.length);
+        //System.out.println("header: " + header.length + " videoNameBytes: " + videoNameBytes.length);
         // fill the payload bitstream:
         // --------------------------
         payload_size = data_length;
@@ -127,10 +127,10 @@ public class RTPpacket {
 
             videoNameLength = unsigned_int(header[13]) + 256 * unsigned_int(header[12]);
 
-            System.out.println("bytesName-> " + videoNameLength);
+            // System.out.println("bytesName-> " + videoNameLength);
             // obter o nome do vídeo do header
             byte[] videoNameBytes = new byte[videoNameLength];
-            System.out.println("packet_size: " + packet_size + " HEADER_SIZE: " + header.length + " videoNameBytes: " + videoNameBytes.length);
+            //System.out.println("packet_size: " + packet_size + " HEADER_SIZE: " + header.length + " videoNameBytes: " + videoNameBytes.length);
             System.arraycopy(packet, 14 , videoNameBytes, 0, videoNameLength);
             VideoName = new String(videoNameBytes, StandardCharsets.UTF_8);
         }
