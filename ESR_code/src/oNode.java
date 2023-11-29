@@ -307,7 +307,7 @@ public class oNode {
                             Date now = new Date();
                             double timeSend = now.getTime();
                             pingSocket.send(sendPacket);
-                            //System.out.println("PING enviado para: " + entry.getKey().getAddress().getHostName());
+                            System.out.println("PING enviado para: " + entry.getAddress().getHostName());   
                             
                             
                             DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);

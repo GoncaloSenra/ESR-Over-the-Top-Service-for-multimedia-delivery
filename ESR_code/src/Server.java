@@ -122,6 +122,7 @@ class Server  {
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 pingSocket.receive(receivePacket);
                 byte[] data = new byte[8192];
+                System.out.println("RECEIVED: " + new String(receivePacket.getData()));
 
                 data = "PONG".getBytes();
 
