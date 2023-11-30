@@ -331,13 +331,13 @@ public class oNode {
 
                             break;
                         } catch (SocketTimeoutException e3) {
-                            System.out.println("[Feedback]: Retry: " + i);
+                            System.out.println("[Feedback]: Retry(Server): " + i + " -> " + entry.getAddress().getHostAddress());
                             if (i == 2) {
                                 
                                 new Thread(() -> {
                                     try {
                                         semaphore.acquire();
-                                        System.out.println("[Feedback]: SERVER removido");
+                                        System.out.println("[Feedback]: SERVER removido " + entry.getAddress().getHostAddress());
                                         servers.remove(entry);
                                         
                                         for (ConcurrentHashMap.Entry<String, InetAddress> entry2 : streams_IP.entrySet()) {    
@@ -452,10 +452,10 @@ public class oNode {
                                 break;
                             } catch (SocketTimeoutException e3) {
                                 //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
-                                System.out.println("[Feedback]: Retry: " + i);
+                                System.out.println("[Feedback]: Retry(Client): " + i + " -> " + entry.getHostAddress());
                                 if (i == 2) {
                                     ip_clients.remove(entry);
-                                    System.out.println("[Feedback]: CLIENTE removido");
+                                    System.out.println("[Feedback]: CLIENTE removido " + entry.getHostAddress());
                                     
                                     for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
                                         if(entry2.getValue().contains(entry)){
@@ -1082,9 +1082,11 @@ public class oNode {
                             break;
                         } catch (SocketTimeoutException e3) {
                             //System.out.println("------TIMEOUT : " + entry.getKey().getAddress().getHostName() + " -----");
+                            // System.out.println("[Feedback] Retry(oNode)" + i + " -> " + entry.getKey().getAddress().getHostAddress());
                             if (i == 2) {
                                 if(entry.getValue()){
                                     //BESTPATHINV
+                                    System.out.println("[Feedback] Onode Removido: " + entry.getKey().getAddress().getHostAddress());
                                     for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
                                         if(entry2.getValue().contains(entry.getKey().getAddress())){
                                             if(entry2.getValue().size() == 1){//mandar tudo down ate ao rp 

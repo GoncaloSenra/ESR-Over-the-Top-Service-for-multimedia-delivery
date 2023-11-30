@@ -16,7 +16,6 @@ class Client {
     private IpWithMask ip_router;
 
     JFrame f = new JFrame("Cliente de Testes");
-    JButton setupButton = new JButton("Setup");
     JButton tearButton = new JButton("Teardown");
     JPanel mainPanel = new JPanel();
     JPanel buttonPanel = new JPanel();
@@ -113,7 +112,6 @@ class Client {
 
         // Buttons
         buttonPanel.setLayout(new GridLayout(1, 0));
-        buttonPanel.add(setupButton);
         buttonPanel.add(tearButton);
 
         // handlers... (so um)
