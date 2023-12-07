@@ -27,12 +27,7 @@ public class oNode {
     private ConcurrentHashMap<String, InetAddress> streams_IP; // lista de streams ativas no node com o ip do servidor que esta a streamar
 
     private Semaphore semaphore ; // Inicializa o semáforo com uma permissão
-    /* 
-     *  - Retries no clientes e servidores
-     *  - Encontrar o caminho (cena extra)
-     *  - Pacotes RTP
-     * 
-     */
+
     public static void main(String[] args) {
         name = args[0];
         if (args.length == 2) {
@@ -339,7 +334,6 @@ public class oNode {
                                         semaphore.acquire();
                                         System.out.println("[Feedback]: SERVER removido " + entry.getAddress().getHostAddress());
                                         servers.remove(entry);
-                                        
                                         for (ConcurrentHashMap.Entry<String, InetAddress> entry2 : streams_IP.entrySet()) {    
                                             if(entry2.getValue().equals(entry.getAddress())){
                                                 streams_IP.remove(entry2.getKey());
@@ -349,16 +343,14 @@ public class oNode {
                                                 InetAddress ip = null;
                                                 double latency = 1000000000;
                                                 for (ServerInfo s : servers) {
-
                                                     if(s.getVideos().contains(entry2.getKey())){
                                                         if (latency > entry.getLatency()) {
-                                                            ip = entry.getAddress();
-                                                            latency = entry.getLatency();
+                                                            ip = s.getAddress();
+                                                            latency = s.getLatency();
                                                         }
                                                     }
 
                                                 }
-
                                                 if (ip != null) {
                                                     System.out.println("streams_ip: "+ streams_IP.toString());
                                                     Packet p = new Packet(entry2.getKey());
@@ -779,6 +771,9 @@ public class oNode {
                         System.out.println("===SEARCH (RP or stream)===");
                         System.out.println("RECEIVED: " + p.getData() + " from " + receivePacket.getAddress() + ":" + 6000);
                         
+                        System.out.println("Path: " + p.getPath().toString());
+                        System.out.println("PathInv: " + p.getPathInv().toString());
+
                         if(streams.contains(str) || RP){ //router tem a stream -> vai enviar para tras para a origem de acordo com o path no pacote
                             Boolean flag = true;
                             if(RP && !streams.contains(str)){
@@ -886,6 +881,9 @@ public class oNode {
                         System.out.println("RECEIVED: " + str + " from " + receivePacket.getAddress() + ":" + 7000);
                         System.out.println("===Lista de streams===");
                         System.out.println(streams.toString());
+                        System.out.println("===Paths do Pacote===");
+                        System.out.println("Path: " + p.getPath().toString());
+                        System.out.println("PathInv: " + p.getPathInv().toString());
 
                         if(!streams.contains(str)){
                             System.out.println("[Feedback]: Nao tem stream");
@@ -1016,6 +1014,9 @@ public class oNode {
                         
                         System.out.println("===SEARCH (caminho volta)===");
 
+                        System.out.println("Path: " + p.getPath().toString());
+                        System.out.println("PathInv: " + p.getPathInv().toString());
+
                         InetAddress dest = p.getPath().get(p.getPath().size() - p.getHops());
                         ByteArrayOutputStream baos = new ByteArrayOutputStream();
                         ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -1088,7 +1089,7 @@ public class oNode {
                                     //BESTPATHINV
                                     System.out.println("[Feedback] Onode Removido: " + entry.getKey().getAddress().getHostAddress());
                                     for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry2 : bestPath.entrySet()) {
-                                        if(entry2.getValue().contains(entry.getKey().getAddress())){
+                                        if(entry2.getValue().contains(entry.getKey().getAddress())){ // parte de stream depois do router, ou seja, recebe stream do no que foi down 
                                             if(entry2.getValue().size() == 1){//mandar tudo down ate ao rp 
 
                                                 for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry3 : bestPathInv.entrySet()) {
@@ -1118,14 +1119,14 @@ public class oNode {
                                                             pingSocket.send(sendPacket2);
                                                             System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
                                                             streams_IP.remove(entry3.getKey());
-                                                            streams.remove(entry2.getKey().trim());
+                                                            streams.remove(entry2.getKey());
                                                             semaphore.release();
                                                             break;
                                                         }
                                                     }
                                                     
                                                 }else{
-                                                    streams.remove(entry2.getKey().trim());
+                                                    streams.remove(entry2.getKey());
                                                 }     
                                             }else{//servia mais que um cliente
                                                 ConcurrentLinkedQueue<InetAddress> lista = entry2.getValue();
@@ -1135,6 +1136,7 @@ public class oNode {
                                         }
                                         System.out.println("Path" + bestPath.toString());
                                         System.out.println("Inv" + bestPathInv.toString());
+                                        System.out.println("Streams" + streams.toString());
                                     }  
                                     
                                     for (ConcurrentHashMap.Entry<String, ConcurrentLinkedQueue<InetAddress>> entry4 : bestPathInv.entrySet()) {
@@ -1168,14 +1170,14 @@ public class oNode {
                                                                 pingSocket.send(sendPacket2);
                                                                 System.out.println("SENT to s -> to: " + entry3.getValue().getHostAddress() + ":" + 9999);
                                                                 streams_IP.remove(entry5.getKey());
-                                                                streams.remove(entry5.getKey().trim());
+                                                                streams.remove(entry5.getKey());
                                                                 semaphore.release();
                                                                 break;
                                                             }
                                                         }
                                                         
                                                     }else{
-                                                        streams.remove(entry5.getKey().trim());
+                                                        streams.remove(entry5.getKey());
                                                     }
                                                         
                                                 }
@@ -1191,6 +1193,7 @@ public class oNode {
                                         }
                                         System.out.println("Path" + bestPath.toString());
                                         System.out.println("Inv" + bestPathInv.toString());
+                                        System.out.println("Streams" + streams.toString());
                                     }
                                 }
                                 //System.out.println("desativado: "+ entry.getKey().getAddress().getHostName());
